@@ -316,9 +316,10 @@ export default function PlinkoGame({
   const processQueuedResult = (nextResult: PlinkoResult) => {
     setResult(nextResult);
     setRisk(nextResult.risk);
-    const paths = nextResult.paths ?? [nextResult.path];
+    const paths = nextResult.paths?.length ? nextResult.paths : nextResult.path ? [nextResult.path] : [generateRandomPath()];
     if (paths.length === 0) {
       setIsAnimating(false);
+      setLandingBucket(null);
       return;
     }
     animateBallPaths(paths, nextResult.isWin);
@@ -333,12 +334,14 @@ export default function PlinkoGame({
       queuedResultsRef.current.push(externalResult);
       lastExternalResultRef.current = externalResult;
     }
+  }, [externalResult]);
 
+  useEffect(() => {
     if (!isAnimating && queuedResultsRef.current.length > 0) {
       const nextResult = queuedResultsRef.current.shift()!;
       processQueuedResult(nextResult);
     }
-  }, [externalResult, isAnimating]);
+  }, [isAnimating]);
   
   
   useEffect(() => {
@@ -448,7 +451,7 @@ export default function PlinkoGame({
       id: index,
       path,
       x: dimensions.boardWidth / 2 + (index - (paths.length - 1) / 2) * 8,
-      y: -ballSize,
+      y: -ballSize * 2,
       finished: false
     })));
 
