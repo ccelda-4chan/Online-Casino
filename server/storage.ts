@@ -178,25 +178,20 @@ export class DatabaseStorage implements IStorage {
       isOwner = true;
     }
     
-    const result = await db
+    const insertedRows = await db
       .insert(users)
       .values({
         ...insertUser,
-        balance: "10000", 
+        balance: "10000",
         isAdmin,
         isOwner,
-        currentLoginStreak: 0, 
+        currentLoginStreak: 0,
       })
-      .execute();
+      .returning();
 
-    const insertedId = Number(result[0].insertId);
-    if (!insertedId) {
+    const user = insertedRows[0];
+    if (!user || !user.id) {
       throw new Error("Failed to create user");
-    }
-
-    const user = await this.getUser(insertedId);
-    if (!user) {
-      throw new Error("User created but could not be retrieved");
     }
 
     return user;

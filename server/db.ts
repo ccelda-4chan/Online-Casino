@@ -1,3 +1,5 @@
+import path from 'path';
+import { readFile } from 'fs/promises';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 
@@ -24,10 +26,23 @@ async function tryPostgresConnection(url: string) {
   return poolInstance;
 }
 
+async function applySchemaIfNeeded(poolInstance: Pool) {
+  try {
+    const schemaPath = path.resolve(process.cwd(), 'mysql-schema.sql');
+    const sql = await readFile(schemaPath, 'utf8');
+    await poolInstance.query(sql);
+    console.log('Database schema ensured from mysql-schema.sql');
+  } catch (error: any) {
+    console.error('Failed to apply database schema:', error);
+    throw error;
+  }
+}
+
 export async function initDatabase() {
   if (postgresUrl) {
     try {
       pool = await tryPostgresConnection(postgresUrl);
+      await applySchemaIfNeeded(pool);
       const schema = await import('@shared/schema');
       db = drizzle(pool, { schema });
       console.log('Connected to PostgreSQL database');
