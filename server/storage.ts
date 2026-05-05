@@ -367,17 +367,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
-    const result = await db
+    const [transaction] = await db
       .insert(transactions)
       .values(insertTransaction)
-      .execute();
+      .returning();
 
-    const id = Number(result[0].insertId);
-    return {
-      id,
-      ...insertTransaction,
-      timestamp: new Date(),
-    } as Transaction;
+    if (!transaction) {
+      throw new Error("Failed to create transaction");
+    }
+
+    return transaction;
   }
   
   async incrementPlayCount(userId: number): Promise<User> {
@@ -518,33 +517,30 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createCoinTransaction(transaction: InsertCoinTransaction): Promise<CoinTransaction> {
-    const result = await db
+    const [coinTransaction] = await db
       .insert(coinTransactions)
       .values(transaction)
-      .execute();
+      .returning();
 
-    const id = Number(result[0].insertId);
-    return {
-      id,
-      ...transaction,
-      timestamp: new Date(),
-    } as CoinTransaction;
+    if (!coinTransaction) {
+      throw new Error("Failed to create coin transaction");
+    }
+
+    return coinTransaction;
   }
   
   
   async createPayment(payment: InsertPayment): Promise<Payment> {
-    const result = await db
+    const [createdPayment] = await db
       .insert(payments)
       .values(payment)
-      .execute();
+      .returning();
 
-    const id = Number(result[0].insertId);
-    return {
-      id,
-      ...payment,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as Payment;
+    if (!createdPayment) {
+      throw new Error("Failed to create payment");
+    }
+
+    return createdPayment;
   }
   
   async getUserPayments(userId: number, limit = 10): Promise<Payment[]> {
@@ -611,25 +607,18 @@ export class DatabaseStorage implements IStorage {
       
       return await db.transaction(async (tx) => {
         
-        const result = await tx
+        const [newReward] = await tx
           .insert(loginRewards)
           .values({
             ...reward,
-            
-            userId: reward.userId 
+            userId: reward.userId
           })
-          .execute();
+          .returning();
 
-        const insertedId = Number(result[0].insertId);
-        if (!insertedId) {
+        if (!newReward) {
           console.error(`ERROR: Failed to create login reward for user ID ${reward.userId}`);
           throw new Error(`Failed to create login reward for user ID ${reward.userId}`);
         }
-
-        const [newReward] = await tx
-          .select()
-          .from(loginRewards)
-          .where(eq(loginRewards.id, insertedId));
 
         if (!newReward) {
           console.error(`ERROR: Failed to fetch created login reward for user ID ${reward.userId}`);
@@ -1089,7 +1078,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     
-    const ticketResult = await db
+    const [ticket] = await db
       .insert(supportTickets)
       .values({
         userId,
@@ -1098,25 +1087,26 @@ export class DatabaseStorage implements IStorage {
         createdAt: new Date(),
         updatedAt: new Date()
       })
-      .execute();
+      .returning();
 
-    const ticketId = Number(ticketResult[0].insertId);
-    if (!ticketId) {
+    if (!ticket) {
       throw new Error("Failed to create support ticket");
     }
 
-    const messageResult = await db
+    const [message] = await db
       .insert(ticketMessages)
       .values({
-        ticketId,
+        ticketId: ticket.id,
         userId,
         message,
         isAdmin: false,
         createdAt: new Date()
       })
-      .execute();
+      .returning();
 
-    const messageId = Number(messageResult[0].insertId);
+    if (!message) {
+      throw new Error("Failed to create support ticket message");
+    }
 
     return {
       id: ticketId,
@@ -1154,7 +1144,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     
-const messageResult = await db
+const [newMessage] = await db
       .insert(ticketMessages)
       .values({
         ticketId,
@@ -1163,9 +1153,11 @@ const messageResult = await db
         isAdmin,
         createdAt: new Date()
       })
-      .execute();
+      .returning();
 
-    const newMessageId = Number(messageResult[0].insertId);
+    if (!newMessage) {
+      throw new Error('Failed to create support ticket reply');
+    }
     
     if (isAdmin && ticket.status === 'open') {
       await this.updateSupportTicketStatus(ticketId, 'in-progress');
@@ -1205,13 +1197,12 @@ const messageResult = await db
   
   
   async createSubscription(subscription: InsertSubscription): Promise<Subscription> {
-    const result = await db
+    const [createdSubscription] = await db
       .insert(subscriptions)
       .values(subscription)
-      .execute();
+      .returning();
 
-    const id = Number(result[0].insertId);
-    if (!id) {
+    if (!createdSubscription) {
       throw new Error('Failed to create subscription');
     }
     
@@ -1221,10 +1212,7 @@ const messageResult = await db
       await this.updateUserSubscriptionTier(subscription.userId, subscription.tier);
     }
 
-    return {
-      id,
-      ...subscription,
-    } as Subscription;
+    return createdSubscription;
   }
   
   async getUserSubscription(userId: number): Promise<Subscription | undefined> {
@@ -1505,7 +1493,7 @@ const messageResult = await db
       throw new Error("User already has an active ban appeal");
     }
 
-    const result = await db
+    const [appeal] = await db
       .insert(banAppeals)
       .values({
         userId,
@@ -1514,17 +1502,11 @@ const messageResult = await db
         createdAt: new Date(),
         updatedAt: new Date()
       })
-      .execute();
+      .returning();
 
-    const id = Number(result[0].insertId);
-    if (!id) {
+    if (!appeal) {
       throw new Error("Failed to create ban appeal");
     }
-
-    const [appeal] = await db
-      .select()
-      .from(banAppeals)
-      .where(eq(banAppeals.id, id));
 
     if (!appeal) {
       throw new Error("Failed to fetch created ban appeal");
@@ -1605,7 +1587,7 @@ const messageResult = await db
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + expiryHours);
 
-    const result = await db
+    const [resetToken] = await db
       .insert(passwordResetTokens)
       .values({
         userId,
@@ -1613,17 +1595,11 @@ const messageResult = await db
         expiresAt,
         isUsed: false
       })
-      .execute();
+      .returning();
 
-    const id = Number(result[0].insertId);
-    if (!id) {
+    if (!resetToken) {
       throw new Error('Failed to create password reset token');
     }
-
-    const [resetToken] = await db
-      .select()
-      .from(passwordResetTokens)
-      .where(eq(passwordResetTokens.id, id));
 
     if (!resetToken) {
       throw new Error('Failed to fetch created password reset token');

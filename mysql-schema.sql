@@ -26,6 +26,22 @@ CREATE TABLE IF NOT EXISTS users (
   subscription_ends_at TIMESTAMP NULL
 );
 
+INSERT INTO users (username, email, password, balance, play_count, is_admin, is_owner, subscription_tier, subscription_status, created_at, last_login)
+VALUES (
+  'admin',
+  'admin@ragebet.local',
+  '$2a$12$vOT2gm/g0Mt2lFb3K48o6O4j9VwCNubfPrMQ.vehJurm3qY7vC0Pu',
+  10000.00,
+  0,
+  TRUE,
+  TRUE,
+  'gold',
+  'active',
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP
+)
+ON CONFLICT (username) DO NOTHING;
+
 CREATE TABLE IF NOT EXISTS transactions (
   id SERIAL PRIMARY KEY,
   user_id INT NOT NULL,
