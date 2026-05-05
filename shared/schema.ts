@@ -1,4 +1,4 @@
-import { pgTable, varchar, text, int, serial, boolean, timestamp, numeric } from "drizzle-orm/pg-core";
+import { pgTable, varchar, text, integer, serial, boolean, timestamp, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -10,17 +10,17 @@ export const users = table("users", {
   email: varchar("email", { length: 255 }).notNull(),
   password: varchar("password", { length: 255 }).notNull(),
   balance: numeric("balance", { precision: 10, scale: 2 }).default("10000").notNull(),
-  playCount: int("play_count").default(0).notNull(),
+  playCount: integer("play_count").default(0).notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   isOwner: boolean("is_owner").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastLogin: timestamp("last_login").defaultNow().notNull(),
   lastRewardDate: timestamp("last_reward_date"),
-  currentLoginStreak: int("current_login_streak").default(0).notNull(),
+  currentLoginStreak: integer("current_login_streak").default(0).notNull(),
   isBanned: boolean("is_banned").default(false).notNull(),
   banReason: text("ban_reason"),
   bannedAt: timestamp("banned_at"),
-  bannedBy: int("banned_by"),
+  bannedBy: integer("banned_by"),
   subscriptionTier: varchar("subscription_tier", { length: 50 }).default("none"),
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
@@ -30,7 +30,7 @@ export const users = table("users", {
 
 export const transactions = table("transactions", {
   id: serial("id").primaryKey(),
-  userId: int("user_id").notNull(),
+  userId: integer("user_id").notNull(),
   gameType: varchar("game_type", { length: 50 }).notNull(),
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   multiplier: numeric("multiplier", { precision: 10, scale: 4 }).notNull(),
@@ -43,16 +43,16 @@ export const transactions = table("transactions", {
 
 export const coinTransactions = table("coin_transactions", {
   id: serial("id").primaryKey(),
-  userId: int("user_id").notNull(),
+  userId: integer("user_id").notNull(),
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   reason: text("reason").notNull(),
-  adminId: int("admin_id").notNull(),
+  adminId: integer("admin_id").notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
 export const payments = table("payments", {
   id: serial("id").primaryKey(),
-  userId: int("user_id").notNull(),
+  userId: integer("user_id").notNull(),
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   coins: numeric("coins", { precision: 10, scale: 2 }).notNull(),
   stripeSessionId: varchar("stripe_session_id", { length: 255 }).notNull(),
@@ -63,15 +63,15 @@ export const payments = table("payments", {
 
 export const loginRewards = table("login_rewards", {
   id: serial("id").primaryKey(),
-  userId: int("user_id").notNull(),
-  day: int("day").notNull(),
+  userId: integer("user_id").notNull(),
+  day: integer("day").notNull(),
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const subscriptions = table("subscriptions", {
   id: serial("id").primaryKey(),
-  userId: int("user_id").notNull(),
+  userId: integer("user_id").notNull(),
   tier: varchar("tier", { length: 50 }).notNull(),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }).notNull(),
   status: varchar("status", { length: 50 }).notNull(),
@@ -86,11 +86,11 @@ export const subscriptions = table("subscriptions", {
 
 export const banAppeals = table("ban_appeals", {
   id: serial("id").primaryKey(),
-  userId: int("user_id").notNull(),
+  userId: integer("user_id").notNull(),
   reason: text("reason").notNull(),
   status: varchar("status", { length: 50 }).default("pending").notNull(),
   adminResponse: text("admin_response"),
-  adminId: int("admin_id"),
+  adminId: integer("admin_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -465,8 +465,8 @@ export type PokerGameState = z.infer<typeof pokerGameStateSchema>;
 
 
 export const supportTickets = table("support_tickets", {
-  id: int("id").primaryKey().autoincrement(),
-  userId: int("user_id").notNull(),
+  id: integer("id").primaryKey().autoincrement(),
+  userId: integer("user_id").notNull(),
   subject: text("subject").notNull(),
   status: text("status").notNull().default("open"), 
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -474,9 +474,9 @@ export const supportTickets = table("support_tickets", {
 });
 
 export const ticketMessages = table("ticket_messages", {
-  id: int("id").primaryKey().autoincrement(),
-  ticketId: int("ticket_id").notNull(),
-  userId: int("user_id").notNull(),
+  id: integer("id").primaryKey().autoincrement(),
+  ticketId: integer("ticket_id").notNull(),
+  userId: integer("user_id").notNull(),
   message: text("message").notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -500,8 +500,8 @@ export type TicketMessage = typeof ticketMessages.$inferSelect;
 
 
 export const passwordResetTokens = table("password_reset_tokens", {
-  id: int("id").primaryKey().autoincrement(),
-  userId: int("user_id").notNull(),
+  id: integer("id").primaryKey().autoincrement(),
+  userId: integer("user_id").notNull(),
   token: text("token").notNull().unique(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
