@@ -54,6 +54,13 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  try {
+    await initDatabase();
+  } catch (err) {
+    console.error("Failed to initialize database:", err);
+    process.exit(1);
+  }
+
   const server = await registerRoutes(app);
 
   const adminUsername = process.env.ADMIN_USERNAME || "admin";
@@ -62,7 +69,6 @@ app.use((req, res, next) => {
   const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
 
   try {
-    await initDatabase();
     const existingAdmin = await storage.getUserByUsername(adminUsername);
     if (!existingAdmin) {
       const passwordToStore = adminPasswordHash || await hashPassword(adminPassword);

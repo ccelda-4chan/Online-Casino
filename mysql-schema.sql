@@ -3,7 +3,7 @@
 --
 -- IMPORTANT: do not run CREATE DATABASE if your MySQL user does not have permission.
 -- Make sure the correct database is selected first, for example:
--- USE `if0_41831439_ragebet`;
+USE `4756205_ragebet`;
 
 CREATE TABLE IF NOT EXISTS `users` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS `support_tickets` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `user_id` INT NOT NULL,
   `subject` TEXT NOT NULL,
-  `status` TEXT NOT NULL DEFAULT 'open',
+  `status` VARCHAR(50) NOT NULL DEFAULT 'open',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX (`user_id`),
@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS `ticket_messages` (
 CREATE TABLE IF NOT EXISTS `password_reset_tokens` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `user_id` INT NOT NULL,
-  `token` TEXT NOT NULL UNIQUE,
+  `token` VARCHAR(255) NOT NULL UNIQUE,
   `expires_at` TIMESTAMP NOT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `is_used` BOOLEAN NOT NULL DEFAULT FALSE,
