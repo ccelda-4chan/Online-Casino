@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
 import { hashPassword } from "./auth";
+import { initDatabase } from "./db";
 import cors from "cors";
 
 if (process.env.NODE_ENV !== "production") {
@@ -61,6 +62,7 @@ app.use((req, res, next) => {
   const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
 
   try {
+    await initDatabase();
     const existingAdmin = await storage.getUserByUsername(adminUsername);
     if (!existingAdmin) {
       const passwordToStore = adminPasswordHash || await hashPassword(adminPassword);

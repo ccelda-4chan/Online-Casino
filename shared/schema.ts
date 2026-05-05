@@ -1,8 +1,11 @@
 import { mysqlTable, varchar, text, int, boolean, timestamp, decimal } from "drizzle-orm/mysql-core";
+import { sqliteTable } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = mysqlTable("users", {
+const table = (process.env.DB_TYPE === "sqlite" ? sqliteTable : mysqlTable) as any;
+
+export const users = table("users", {
   id: int("id").primaryKey().autoincrement(),
   username: varchar("username", { length: 191 }).notNull().unique(),
   email: varchar("email", { length: 255 }).notNull(),
@@ -26,7 +29,7 @@ export const users = mysqlTable("users", {
   subscriptionEndsAt: timestamp("subscription_ends_at"),
 });
 
-export const transactions = mysqlTable("transactions", {
+export const transactions = table("transactions", {
   id: int("id").primaryKey().autoincrement(),
   userId: int("user_id").notNull(),
   gameType: varchar("game_type", { length: 50 }).notNull(),
@@ -39,7 +42,7 @@ export const transactions = mysqlTable("transactions", {
   gameData: text("game_data"),
 });
 
-export const coinTransactions = mysqlTable("coin_transactions", {
+export const coinTransactions = table("coin_transactions", {
   id: int("id").primaryKey().autoincrement(),
   userId: int("user_id").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
@@ -48,7 +51,7 @@ export const coinTransactions = mysqlTable("coin_transactions", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
-export const payments = mysqlTable("payments", {
+export const payments = table("payments", {
   id: int("id").primaryKey().autoincrement(),
   userId: int("user_id").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
@@ -59,7 +62,7 @@ export const payments = mysqlTable("payments", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const loginRewards = mysqlTable("login_rewards", {
+export const loginRewards = table("login_rewards", {
   id: int("id").primaryKey().autoincrement(),
   userId: int("user_id").notNull(),
   day: int("day").notNull(),
@@ -67,7 +70,7 @@ export const loginRewards = mysqlTable("login_rewards", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const subscriptions = mysqlTable("subscriptions", {
+export const subscriptions = table("subscriptions", {
   id: int("id").primaryKey().autoincrement(),
   userId: int("user_id").notNull(),
   tier: varchar("tier", { length: 50 }).notNull(),
@@ -82,7 +85,7 @@ export const subscriptions = mysqlTable("subscriptions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const banAppeals = mysqlTable("ban_appeals", {
+export const banAppeals = table("ban_appeals", {
   id: int("id").primaryKey().autoincrement(),
   userId: int("user_id").notNull(),
   reason: text("reason").notNull(),
@@ -462,7 +465,7 @@ export type PokerGameState = z.infer<typeof pokerGameStateSchema>;
 
 
 
-export const supportTickets = mysqlTable("support_tickets", {
+export const supportTickets = table("support_tickets", {
   id: int("id").primaryKey().autoincrement(),
   userId: int("user_id").notNull(),
   subject: text("subject").notNull(),
@@ -471,7 +474,7 @@ export const supportTickets = mysqlTable("support_tickets", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const ticketMessages = mysqlTable("ticket_messages", {
+export const ticketMessages = table("ticket_messages", {
   id: int("id").primaryKey().autoincrement(),
   ticketId: int("ticket_id").notNull(),
   userId: int("user_id").notNull(),
@@ -497,7 +500,7 @@ export type InsertTicketMessage = z.infer<typeof insertTicketMessageSchema>;
 export type TicketMessage = typeof ticketMessages.$inferSelect;
 
 
-export const passwordResetTokens = mysqlTable("password_reset_tokens", {
+export const passwordResetTokens = table("password_reset_tokens", {
   id: int("id").primaryKey().autoincrement(),
   userId: int("user_id").notNull(),
   token: text("token").notNull().unique(),
