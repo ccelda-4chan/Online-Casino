@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import mysql from 'mysql2/promise';
 import { drizzle as drizzleMysql } from 'drizzle-orm/mysql2';
 
@@ -55,6 +57,7 @@ export async function initDatabase() {
   const schema = await import('@shared/schema');
   const { default: Database } = await import('better-sqlite3');
   const { drizzle: drizzleSqlite } = await import('drizzle-orm/better-sqlite3');
+  fs.mkdirSync(path.dirname(sqlitePath), { recursive: true });
   const sqliteDb = new Database(sqlitePath);
   db = drizzleSqlite(sqliteDb, { schema, mode: 'default' });
   isSqliteFallback = true;
