@@ -313,6 +313,17 @@ export default function PlinkoGame({
   }, [risk, result, dimensions]);
   
   
+  const processQueuedResult = (nextResult: PlinkoResult) => {
+    setResult(nextResult);
+    setRisk(nextResult.risk);
+    const paths = nextResult.paths ?? [nextResult.path];
+    if (paths.length === 0) {
+      setIsAnimating(false);
+      return;
+    }
+    animateBallPaths(paths, nextResult.isWin);
+  };
+
   useEffect(() => {
     if (!externalResult) {
       return;
@@ -325,10 +336,7 @@ export default function PlinkoGame({
 
     if (!isAnimating && queuedResultsRef.current.length > 0) {
       const nextResult = queuedResultsRef.current.shift()!;
-      setResult(nextResult);
-      setRisk(nextResult.risk);
-      const paths = nextResult.paths ?? [nextResult.path];
-      animateBallPaths(paths);
+      processQueuedResult(nextResult);
     }
   }, [externalResult, isAnimating]);
   
@@ -336,13 +344,8 @@ export default function PlinkoGame({
   useEffect(() => {
     if (externalRisk && externalRisk !== risk) {
       setRisk(externalRisk);
-      console.log('Risk level updated from parent:', externalRisk);
-      
-      
       setResult(null);
       setLandingBucket(null);
-      
-      
       setBuckets(calculateBucketsWithSpacing(externalRisk, dimensions.pinSpacingX, dimensions.boardWidth));
     }
   }, [externalRisk, risk, dimensions]);
@@ -378,7 +381,12 @@ export default function PlinkoGame({
     setBallStates(prev => prev.map(ball => ball.id === id ? { ...ball, ...updated } : ball));
   };
 
-  const animateBallPaths = (paths: PathStep[][]): void => {
+  const animateBallPaths = (paths: PathStep[][], isWin: boolean): void => {
+    if (!paths || paths.length === 0) {
+      setIsAnimating(false);
+      return;
+    }
+
     resetBallAnimations();
     setIsAnimating(true);
     setLandingBucket(paths.length === 1 ? paths[0][paths[0].length - 1].position : null);
@@ -386,6 +394,7 @@ export default function PlinkoGame({
 
     const startDelayStep = 120;
     let completedCount = 0;
+    const currentIsWin = isWin;
 
     const animateSingleBall = (ballIndex: number, path: PathStep[]) => {
       const offsetX = (ballIndex - (paths.length - 1) / 2) * 8;
@@ -398,7 +407,7 @@ export default function PlinkoGame({
           completedCount += 1;
           if (completedCount === paths.length) {
             setIsAnimating(false);
-            if (result?.isWin) {
+            if (currentIsWin) {
               play('win');
             } else {
               play('lose');
@@ -428,7 +437,7 @@ export default function PlinkoGame({
         }
 
         currentStep += 1;
-        const nextDuration = 120 + Math.floor((currentStep / totalSteps) * 50);
+        const nextDuration = 120 + Math.floor((currentStep / Math.max(totalSteps, 1)) * 50);
         animationRefs.current.push(setTimeout(step, nextDuration));
       };
 
@@ -439,7 +448,7 @@ export default function PlinkoGame({
       id: index,
       path,
       x: dimensions.boardWidth / 2 + (index - (paths.length - 1) / 2) * 8,
-      y: 0,
+      y: -ballSize,
       finished: false
     })));
 
