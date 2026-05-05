@@ -17,7 +17,7 @@ import {
   blackjackAction,
   playPlinko
 } from "./games";
-import Stripe from 'stripe';
+import type Stripe from 'stripe';
 import { 
   createPaymentIntentSchema, 
   CoinPackage, 
@@ -28,6 +28,8 @@ import {
 } from '@shared/schema';
 import { z } from 'zod';
 
+const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
+const stripe: Stripe | null = null;
 
 const coinPackages: CoinPackage[] = [
   {
@@ -63,11 +65,6 @@ const coinPackages: CoinPackage[] = [
     discount: 25
   }
 ];
-
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-02-24.acacia'
-});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -291,6 +288,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/subscriptions/create", authMiddleware, async (req: Request, res: Response) => {
     try {
+      if (!stripe) {
+        return res.status(503).json({ message: 'Stripe is not configured. Subscription creation is unavailable.' });
+      }
+
       const { tier } = manageSubscriptionSchema.parse(req.body);
       const userId = req.user!.id;
       
@@ -369,6 +370,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/subscriptions/cancel", authMiddleware, async (req: Request, res: Response) => {
     try {
+      if (!stripe) {
+        return res.status(503).json({ message: 'Stripe is not configured. Subscription cancellation is unavailable.' });
+      }
+
       const userId = req.user!.id;
       
       
@@ -399,13 +404,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   
   app.post("/api/subscriptions/webhook", async (req: Request, res: Response) => {
+    if (!stripe) {
+      return res.status(503).json({ message: 'Stripe is not configured. Webhook processing is unavailable.' });
+    }
+
     const sig = req.headers['stripe-signature'] as string;
     
     try {
       const event = stripe.webhooks.constructEvent(
         req.body,
         sig,
-        process.env.STRIPE_WEBHOOK_SECRET || 'whsec_test'
+        stripeWebhookSecret || 'whsec_test'
       );
       
       console.log(`Received webhook event: ${event.type}`);
