@@ -1,9 +1,14 @@
+import dotenv from "dotenv";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
 import { hashPassword } from "./auth";
 import cors from "cors";
+
+if (process.env.NODE_ENV !== "production") {
+  dotenv.config();
+}
 
 const app = express();
 app.use(express.json());
@@ -89,15 +94,14 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  
-  
-  
-  const port = 5000;
+  const port = Number(process.env.PORT) || 5000;
+  const host = process.env.HOST || "0.0.0.0";
+
   server.listen({
     port,
-    host: "0.0.0.0",
+    host,
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`serving on ${host}:${port}`);
   });
 })();

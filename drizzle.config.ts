@@ -1,7 +1,13 @@
 import { defineConfig } from "drizzle-kit";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL, ensure the database is provisioned");
+const databaseUrl =
+  process.env.DATABASE_URL?.trim() ||
+  process.env.MYSQL_DATABASE_URL?.trim() ||
+  process.env.MYSQL_URL?.trim() ||
+  process.env.DB_URL?.trim();
+
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL or MYSQL_DATABASE_URL must be set. Ensure the database is provisioned and the env var is configured.");
 }
 
 export default defineConfig({
@@ -9,6 +15,6 @@ export default defineConfig({
   schema: "./shared/schema.ts",
   dialect: "mysql",
   dbCredentials: {
-    url: process.env.DATABASE_URL,
+    url: databaseUrl,
   },
 });
