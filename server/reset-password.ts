@@ -6,9 +6,10 @@ import { z } from 'zod';
 import { passwordResetSchema, forgotPasswordSchema } from '@shared/schema';
 import { Resend } from 'resend';
 
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
+const resendApiKey = process.env.RESEND_API_KEY?.trim();
+const isResendConfigured = Boolean(resendApiKey);
+const resend = isResendConfigured ? new Resend(resendApiKey) : null;
+const emailFrom = process.env.EMAIL_FROM?.trim() || 'noreply@aggeloskwn.com';
 
 const scryptAsync = promisify(scrypt);
 
@@ -54,14 +55,19 @@ export async function forgotPassword(req: Request, res: Response) {
     
     
     const resetLink = `${req.protocol}://${req.get('host')}/reset-password?token=${token}`;
-    
-    
+
     console.log(`[PASSWORD RESET] Attempting to send email to: ${user.email}`);
     console.log(`[PASSWORD RESET] Reset link: ${resetLink}`);
-    
-    
+
+    if (!isResendConfigured || !resend) {
+      console.warn('Resend API key is not configured. Password reset email will not be sent.');
+      return res.status(200).json({
+        message: "If a user with that username exists, a password reset link has been sent to their email."
+      });
+    }
+
     const { data, error } = await resend.emails.send({
-      from: 'noreply@aggeloskwn.com',
+      from: emailFrom,
       to: user.email,
       subject: 'Reset Your Rage Bet Password',
       html: `
@@ -86,9 +92,9 @@ export async function forgotPassword(req: Request, res: Response) {
       console.error('Error details:', JSON.stringify(error, null, 2));
       return res.status(500).json({ message: 'Failed to send reset email. Please try again later.' });
     }
-    
+
     console.log('[PASSWORD RESET] Email sent successfully, data:', JSON.stringify(data, null, 2));
-    
+
     res.status(200).json({ 
       message: "If a user with that username exists, a password reset link has been sent to their email." 
     });
