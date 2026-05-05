@@ -1,16 +1,15 @@
-import { mysqlTable, varchar, text, int, boolean, timestamp, decimal } from "drizzle-orm/mysql-core";
-import { sqliteTable } from "drizzle-orm/sqlite-core";
+import { pgTable, varchar, text, int, serial, boolean, timestamp, numeric } from "drizzle-orm/postgres-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-const table = (process.env.DB_TYPE === "sqlite" ? sqliteTable : mysqlTable) as any;
+const table = pgTable as any;
 
 export const users = table("users", {
-  id: int("id").primaryKey().autoincrement(),
+  id: serial("id").primaryKey(),
   username: varchar("username", { length: 191 }).notNull().unique(),
   email: varchar("email", { length: 255 }).notNull(),
   password: varchar("password", { length: 255 }).notNull(),
-  balance: decimal("balance", { precision: 10, scale: 2 }).default("10000").notNull(),
+  balance: numeric("balance", { precision: 10, scale: 2 }).default("10000").notNull(),
   playCount: int("play_count").default(0).notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   isOwner: boolean("is_owner").default(false).notNull(),
@@ -30,12 +29,12 @@ export const users = table("users", {
 });
 
 export const transactions = table("transactions", {
-  id: int("id").primaryKey().autoincrement(),
+  id: serial("id").primaryKey(),
   userId: int("user_id").notNull(),
   gameType: varchar("game_type", { length: 50 }).notNull(),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  multiplier: decimal("multiplier", { precision: 10, scale: 4 }).notNull(),
-  payout: decimal("payout", { precision: 10, scale: 2 }).notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  multiplier: numeric("multiplier", { precision: 10, scale: 4 }).notNull(),
+  payout: numeric("payout", { precision: 10, scale: 2 }).notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
   isWin: boolean("is_win").notNull(),
   metadata: text("metadata"),
@@ -43,19 +42,19 @@ export const transactions = table("transactions", {
 });
 
 export const coinTransactions = table("coin_transactions", {
-  id: int("id").primaryKey().autoincrement(),
+  id: serial("id").primaryKey(),
   userId: int("user_id").notNull(),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   reason: text("reason").notNull(),
   adminId: int("admin_id").notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
 export const payments = table("payments", {
-  id: int("id").primaryKey().autoincrement(),
+  id: serial("id").primaryKey(),
   userId: int("user_id").notNull(),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  coins: decimal("coins", { precision: 10, scale: 2 }).notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  coins: numeric("coins", { precision: 10, scale: 2 }).notNull(),
   stripeSessionId: varchar("stripe_session_id", { length: 255 }).notNull(),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -63,15 +62,15 @@ export const payments = table("payments", {
 });
 
 export const loginRewards = table("login_rewards", {
-  id: int("id").primaryKey().autoincrement(),
+  id: serial("id").primaryKey(),
   userId: int("user_id").notNull(),
   day: int("day").notNull(),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const subscriptions = table("subscriptions", {
-  id: int("id").primaryKey().autoincrement(),
+  id: serial("id").primaryKey(),
   userId: int("user_id").notNull(),
   tier: varchar("tier", { length: 50 }).notNull(),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }).notNull(),
@@ -79,14 +78,14 @@ export const subscriptions = table("subscriptions", {
   startDate: timestamp("start_date").defaultNow().notNull(),
   endDate: timestamp("end_date"),
   priceId: text("price_id").notNull(),
-  priceAmount: decimal("price_amount", { precision: 10, scale: 2 }).notNull(),
+  priceAmount: numeric("price_amount", { precision: 10, scale: 2 }).notNull(),
   metadata: text("metadata"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const banAppeals = table("ban_appeals", {
-  id: int("id").primaryKey().autoincrement(),
+  id: serial("id").primaryKey(),
   userId: int("user_id").notNull(),
   reason: text("reason").notNull(),
   status: varchar("status", { length: 50 }).default("pending").notNull(),
