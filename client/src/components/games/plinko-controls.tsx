@@ -80,8 +80,6 @@ export function PlinkoControls({
   
   
   const handlePlaceBet = (): void => {
-    if (isAnimating) return;
-    
     if (!user) {
       toast({
         title: 'Login Required',
@@ -134,7 +132,7 @@ export function PlinkoControls({
           <Select
             value={risk}
             onValueChange={(value: RiskLevel) => handleRiskChange(value)}
-            disabled={isAnimating || placeBetMutation.isPending}
+            disabled={placeBetMutation.isPending}
           >
             <SelectTrigger className="text-xs xs:text-sm">
               <SelectValue placeholder="Select Risk Level" />
@@ -189,7 +187,7 @@ export function PlinkoControls({
               variant="outline" 
               size="icon" 
               onClick={() => adjustAmount(-10)}
-              disabled={amount <= 10 || isAnimating || placeBetMutation.isPending}
+              disabled={amount <= 10 || placeBetMutation.isPending}
               className="h-8 w-8 xs:h-9 xs:w-9"
             >
               <ArrowDown className="h-3 w-3 xs:h-4 xs:w-4" />
@@ -200,13 +198,13 @@ export function PlinkoControls({
               onChange={handleAmountChange}
               min={1}
               className="text-center text-xs xs:text-sm"
-              disabled={isAnimating || placeBetMutation.isPending}
+              disabled={placeBetMutation.isPending}
             />
             <Button 
               variant="outline" 
               size="icon" 
               onClick={() => adjustAmount(10)}
-              disabled={isAnimating || placeBetMutation.isPending}
+              disabled={placeBetMutation.isPending}
               className="h-8 w-8 xs:h-9 xs:w-9"
             >
               <ArrowUp className="h-3 w-3 xs:h-4 xs:w-4" />
@@ -218,7 +216,7 @@ export function PlinkoControls({
               size="sm" 
               className="flex-1 text-xs xs:text-sm px-0 xs:px-2 h-8 min-w-0"
               onClick={() => setAmount(Math.max(1, Math.floor(amount / 2)))}
-              disabled={amount <= 1 || isAnimating || placeBetMutation.isPending}
+              disabled={amount <= 1 || placeBetMutation.isPending}
             >
               ½
             </Button>
@@ -227,7 +225,7 @@ export function PlinkoControls({
               size="sm" 
               className="flex-1 text-xs xs:text-sm px-0 xs:px-2 h-8 min-w-0"
               onClick={() => setAmount(amount * 2)}
-              disabled={amount >= 5000 || isAnimating || placeBetMutation.isPending}
+              disabled={amount >= 5000 || placeBetMutation.isPending}
             >
               2×
             </Button>
@@ -240,7 +238,7 @@ export function PlinkoControls({
                   setAmount(Math.floor(Number(user.balance)));
                 }
               }}
-              disabled={!user?.balance || isAnimating || placeBetMutation.isPending}
+              disabled={!user?.balance || placeBetMutation.isPending}
             >
               Max
             </Button>
@@ -251,7 +249,7 @@ export function PlinkoControls({
               variant="outline"
               size="sm"
               onClick={() => setBalls(Math.max(1, balls - 1))}
-              disabled={balls <= 1 || isAnimating || placeBetMutation.isPending}
+              disabled={balls <= 1 || placeBetMutation.isPending}
             >
               -
             </Button>
@@ -262,7 +260,7 @@ export function PlinkoControls({
               variant="outline"
               size="sm"
               onClick={() => setBalls(Math.min(5, balls + 1))}
-              disabled={balls >= 5 || isAnimating || placeBetMutation.isPending}
+              disabled={balls >= 5 || placeBetMutation.isPending}
             >
               +
             </Button>
@@ -274,7 +272,7 @@ export function PlinkoControls({
           <Button 
             variant="outline" 
             onClick={() => setAmount(10)}
-            disabled={isAnimating || placeBetMutation.isPending}
+            disabled={placeBetMutation.isPending}
             className="text-xs xs:text-sm"
           >
             10
@@ -282,7 +280,7 @@ export function PlinkoControls({
           <Button 
             variant="outline" 
             onClick={() => setAmount(50)}
-            disabled={isAnimating || placeBetMutation.isPending}
+            disabled={placeBetMutation.isPending}
             className="text-xs xs:text-sm"
           >
             50
@@ -290,7 +288,7 @@ export function PlinkoControls({
           <Button 
             variant="outline" 
             onClick={() => setAmount(100)}
-            disabled={isAnimating || placeBetMutation.isPending}
+            disabled={placeBetMutation.isPending}
             className="text-xs xs:text-sm"
           >
             100
@@ -298,7 +296,7 @@ export function PlinkoControls({
           <Button 
             variant="outline" 
             onClick={() => setAmount(500)}
-            disabled={isAnimating || placeBetMutation.isPending}
+            disabled={placeBetMutation.isPending}
             className="text-xs xs:text-sm"
           >
             500
@@ -306,7 +304,7 @@ export function PlinkoControls({
           <Button 
             variant="outline" 
             onClick={() => setAmount(1000)}
-            disabled={isAnimating || placeBetMutation.isPending}
+            disabled={placeBetMutation.isPending}
             className="text-xs xs:text-sm"
           >
             1K
@@ -314,7 +312,7 @@ export function PlinkoControls({
           <Button 
             variant="outline" 
             onClick={() => setAmount(5000)}
-            disabled={isAnimating || placeBetMutation.isPending}
+            disabled={placeBetMutation.isPending}
             className="text-xs xs:text-sm"
           >
             5K
@@ -323,7 +321,7 @@ export function PlinkoControls({
             variant="outline"
             className="col-span-3 bg-gradient-to-r from-amber-100/10 to-amber-300/10 hover:from-amber-100/20 hover:to-amber-300/20 border-amber-500/30 text-amber-500 font-bold text-xs xs:text-sm sm:text-base"
             onClick={() => setAmount(10000)}
-            disabled={isAnimating || placeBetMutation.isPending}
+            disabled={placeBetMutation.isPending}
           >
             <span className="hidden xs:inline">MAX BET: </span>10,000
           </Button>
@@ -335,7 +333,6 @@ export function PlinkoControls({
           size="lg"
           variant="default"
           disabled={
-            isAnimating || 
             placeBetMutation.isPending || 
             !user || 
             amount < 1

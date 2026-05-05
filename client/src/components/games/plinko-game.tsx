@@ -218,6 +218,8 @@ export default function PlinkoGame({
   const [buckets, setBuckets] = useState<Bucket[]>([]);
   const [landingBucket, setLandingBucket] = useState<number | null>(null);
   const animationRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const queuedResultsRef = useRef<PlinkoResult[]>([]);
+  const lastExternalResultRef = useRef<PlinkoResult | null>(null);
   
   
   const [dimensions, setDimensions] = useState({
@@ -238,9 +240,6 @@ export default function PlinkoGame({
       
       
       const containerWidth = Math.max(containerRef.current.clientWidth, 300);
-      console.log('Container width:', containerWidth);
-      
-      
       const newDimensions = calculateDimensions(containerWidth);
       setDimensions(newDimensions);
       
@@ -253,7 +252,6 @@ export default function PlinkoGame({
         newDimensions.pinSpacingX, 
         newDimensions.pinSpacingY
       );
-      console.log('Pins calculated:', pinPositions.length, pinPositions[0]);
       setPins(pinPositions);
       
       
@@ -316,18 +314,23 @@ export default function PlinkoGame({
   
   
   useEffect(() => {
-    if (externalResult && !isAnimating) {
-      setResult(externalResult);
-      setRisk(externalResult.risk);
-      const paths = externalResult.paths ?? [externalResult.path];
-      animateBallPaths(paths);
-      
-      console.log('Received game result from server:', externalResult);
-      if (externalResult.multipliers) {
-        console.log('Using server-provided multipliers:', externalResult.multipliers);
-      }
+    if (!externalResult) {
+      return;
     }
-  }, [externalResult]);
+
+    if (externalResult !== lastExternalResultRef.current) {
+      queuedResultsRef.current.push(externalResult);
+      lastExternalResultRef.current = externalResult;
+    }
+
+    if (!isAnimating && queuedResultsRef.current.length > 0) {
+      const nextResult = queuedResultsRef.current.shift()!;
+      setResult(nextResult);
+      setRisk(nextResult.risk);
+      const paths = nextResult.paths ?? [nextResult.path];
+      animateBallPaths(paths);
+    }
+  }, [externalResult, isAnimating]);
   
   
   useEffect(() => {
@@ -477,9 +480,6 @@ export default function PlinkoGame({
   };
   
   
-  useEffect(() => {
-    console.log('Pins state at render:', pins.length, pins);
-  }, [pins]);
   
   return (
     <div className="p-4" ref={containerRef}>
