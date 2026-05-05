@@ -572,7 +572,7 @@ export default function CrashGame() {
         {}
         {gameState === 'in-progress' && (
           <motion.button
-            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700
+            className="relative z-20 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700
               text-white font-bold py-4 px-4 rounded-xl shadow-lg shadow-green-900/20
               flex items-center justify-center space-x-2 transition-all"
             whileHover={{ scale: 1.02 }}
@@ -589,11 +589,11 @@ export default function CrashGame() {
             onClick={handleCashout}
           >
             <motion.div 
-              className="absolute inset-0 bg-emerald-400/20 rounded-xl z-0"
+              className="absolute inset-0 bg-emerald-400/20 rounded-xl z-0 pointer-events-none"
               animate={{ opacity: [0, 0.5, 0] }}
               transition={{ duration: 1.5, repeat: Infinity, repeatType: "reverse" }}
             />
-            <div className="z-10 flex items-center justify-center space-x-2">
+            <div className="relative relative z-10 flex items-center justify-center space-x-2">
               <ChevronUp className="h-6 w-6" />
               <div className="flex flex-col items-start">
                 <span className="text-lg">CASH OUT</span>

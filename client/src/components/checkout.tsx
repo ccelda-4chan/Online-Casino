@@ -5,7 +5,7 @@ import {
   PaymentElement,
   Elements
 } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
+import type { Stripe } from '@stripe/stripe-js';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
@@ -13,9 +13,6 @@ import { Loader2, Coins, CreditCard, ChevronLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CoinPackage } from '@shared/schema';
 
-
-
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 interface CheckoutFormProps {
   clientSecret: string;
@@ -108,7 +105,7 @@ function CheckoutForm({ clientSecret, packageDetails, onSuccess, onCancel }: Che
           
           <div className="flex justify-between items-center pt-2 mt-1">
             <span className="font-semibold">Total</span>
-            <div className="font-bold text-xl">${packageDetails.price.toFixed(2)}</div>
+            <div className="font-bold text-xl">₱{packageDetails.price.toFixed(2)}</div>
           </div>
         </div>
       </div>
@@ -185,8 +182,17 @@ interface CheckoutProps {
 
 export default function Checkout({ packageId, onSuccess, onCancel }: CheckoutProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
   const { toast } = useToast();
   
+  useEffect(() => {
+    const key = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+    if (!key) return;
+
+    import('@stripe/stripe-js')
+      .then((module) => setStripePromise(module.loadStripe(key)))
+      .catch(() => setStripePromise(null));
+  }, []);
   
   const { data: packages, isLoading: isPackagesLoading } = useQuery<CoinPackage[]>({
     queryKey: ['/api/coins/packages'],
@@ -238,6 +244,17 @@ export default function Checkout({ packageId, onSuccess, onCancel }: CheckoutPro
       <div className="flex flex-col items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
         <p className="text-muted-foreground">Setting up payment...</p>
+      </div>
+    );
+  }
+
+  if (!stripePromise) {
+    return (
+      <div className="rounded-xl border border-red-500/20 bg-red-600/10 p-6 text-center">
+        <p className="text-red-100 font-semibold mb-2">Stripe configuration is missing.</p>
+        <p className="text-sm text-red-200">
+          The app needs a Stripe public key defined in <code>VITE_STRIPE_PUBLIC_KEY</code> to process payments.
+        </p>
       </div>
     );
   }

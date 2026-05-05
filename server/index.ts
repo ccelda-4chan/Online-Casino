@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { storage } from "./storage";
+import { hashPassword } from "./auth";
 import cors from "cors";
 
 const app = express();
@@ -47,6 +49,28 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+
+  const adminUsername = process.env.ADMIN_USERNAME || "admin";
+  const adminEmail = process.env.ADMIN_EMAIL || "admin@ragebet.local";
+  const adminPassword = process.env.ADMIN_PASSWORD || "Admin123!";
+  const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
+
+  try {
+    const existingAdmin = await storage.getUserByUsername(adminUsername);
+    if (!existingAdmin) {
+      const passwordToStore = adminPasswordHash || await hashPassword(adminPassword);
+      await storage.createUser({
+        username: adminUsername,
+        email: adminEmail,
+        password: passwordToStore,
+      });
+      log(`Default admin account created: ${adminUsername}`);
+    } else {
+      log(`Default admin account already exists: ${adminUsername}`);
+    }
+  } catch (err) {
+    console.error("Failed to create default admin account:", err);
+  }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

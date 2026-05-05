@@ -112,10 +112,10 @@ export default function CoinPackages({ onSelectPackage }: CoinPackagesProps) {
               
               <div className="flex items-center justify-center mb-6">
                 <div>
-                  <span className="text-2xl font-bold">${pkg.price.toFixed(2)}</span>
+                  <span className="text-2xl font-bold">₱{pkg.price.toFixed(2)}</span>
                   {pkg.discount && pkg.discount > 0 ? (
                     <span className="ml-2 text-muted-foreground line-through text-sm">
-                      ${originalPrice}
+                      ₱{originalPrice}
                     </span>
                   ) : (
                     <span className="ml-2 text-muted-foreground text-sm opacity-0">

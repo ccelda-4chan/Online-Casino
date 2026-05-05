@@ -172,12 +172,13 @@ export class DatabaseStorage implements IStorage {
     let isAdmin = false;
     let isOwner = false;
     
-    if (insertUser.username === 'aggeloskwn') {
+    const adminUsernames = [process.env.ADMIN_USERNAME || 'admin', 'aggeloskwn'];
+    if (adminUsernames.includes(insertUser.username)) {
       isAdmin = true;
       isOwner = true;
     }
     
-    const [user] = await db
+    const result = await db
       .insert(users)
       .values({
         ...insertUser,
@@ -186,7 +187,18 @@ export class DatabaseStorage implements IStorage {
         isOwner,
         currentLoginStreak: 0, 
       })
-      .returning();
+      .execute();
+
+    const insertedId = Number(result[0].insertId);
+    if (!insertedId) {
+      throw new Error("Failed to create user");
+    }
+
+    const user = await this.getUser(insertedId);
+    if (!user) {
+      throw new Error("User created but could not be retrieved");
+    }
+
     return user;
   }
 
@@ -203,17 +215,18 @@ export class DatabaseStorage implements IStorage {
     console.log(`Current balance for user ${user.username} (ID: ${userId}): ${user.balance}`);
     
     
-    const [updatedUser] = await db
+    await db
       .update(users)
       .set({ balance: String(newBalance) })
       .where(eq(users.id, userId))
-      .returning();
-    
+      .execute();
+
+    const updatedUser = await this.getUser(userId);
     if (!updatedUser) {
       console.error(`Error updating balance: No user returned after update for ID ${userId}`);
       throw new Error(`Failed to update user ID ${userId}`);
     }
-    
+
     console.log(`Successfully updated balance for user ${updatedUser.username} (ID: ${userId}) from ${user.balance} to ${updatedUser.balance}`);
     return updatedUser;
   }
@@ -231,17 +244,18 @@ export class DatabaseStorage implements IStorage {
     console.log(`Current last login for user ${user.username} (ID: ${userId}): ${user.lastLogin || 'never'}`);
     
     
-    const [updatedUser] = await db
+    await db
       .update(users)
       .set({ lastLogin: new Date() })
       .where(eq(users.id, userId))
-      .returning();
-    
+      .execute();
+
+    const updatedUser = await this.getUser(userId);
     if (!updatedUser) {
       console.error(`Error updating last login: No user returned after update for ID ${userId}`);
       throw new Error(`Failed to update user ID ${userId}`);
     }
-    
+
     console.log(`Successfully updated last login for user ${updatedUser.username} (ID: ${userId}) to ${updatedUser.lastLogin}`);
     return updatedUser;
   }
@@ -272,17 +286,18 @@ export class DatabaseStorage implements IStorage {
         console.log(`[TRANSACTION] User creation date: ${lockedUser.createdAt}, last reward: ${lockedUser.lastRewardDate || 'never'}`);
         
         
-        const [updatedUser] = await tx
+        await tx
           .update(users)
           .set({ 
             currentLoginStreak: streak,
             lastRewardDate: currentTimestamp  
           })
           .where(eq(users.id, userId)) 
-          .returning();
+          .execute();
         
+        const updatedUser = await this.getUser(userId);
         if (!updatedUser) {
-          console.error(`[TRANSACTION] Error updating streak: No user returned after update for ID ${userId}`);
+          console.error(`[TRANSACTION] Error updating streak: User not found after update for ID ${userId}`);
           throw new Error(`Failed to update user ID ${userId} in transaction`);
         }
         
@@ -357,12 +372,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
-    const [transaction] = await db
+    const result = await db
       .insert(transactions)
       .values(insertTransaction)
-      .returning();
-    
-    return transaction;
+      .execute();
+
+    const id = Number(result[0].insertId);
+    return {
+      id,
+      ...insertTransaction,
+      timestamp: new Date(),
+    } as Transaction;
   }
   
   async incrementPlayCount(userId: number): Promise<User> {
@@ -381,12 +401,13 @@ export class DatabaseStorage implements IStorage {
     const newPlayCount = (user.playCount || 0) + 1;
     
     
-    const [updatedUser] = await db
+    await db
       .update(users)
       .set({ playCount: newPlayCount })
       .where(eq(users.id, userId))
-      .returning();
+      .execute();
     
+    const updatedUser = await this.getUser(userId);
     if (!updatedUser) {
       console.error(`Error incrementing play count: No user returned after update for ID ${userId}`);
       throw new Error(`Failed to update user ID ${userId}`);
@@ -429,12 +450,13 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateUserAdminStatus(userId: number, updates: AdminUserUpdate): Promise<User> {
-    const [updatedUser] = await db
+    await db
       .update(users)
       .set(updates)
       .where(eq(users.id, userId))
-      .returning();
+      .execute();
     
+    const updatedUser = await this.getUser(userId);
     if (!updatedUser) {
       throw new Error("User not found");
     }
@@ -501,22 +523,33 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createCoinTransaction(transaction: InsertCoinTransaction): Promise<CoinTransaction> {
-    const [coinTransaction] = await db
+    const result = await db
       .insert(coinTransactions)
       .values(transaction)
-      .returning();
-    
-    return coinTransaction;
+      .execute();
+
+    const id = Number(result[0].insertId);
+    return {
+      id,
+      ...transaction,
+      timestamp: new Date(),
+    } as CoinTransaction;
   }
   
   
   async createPayment(payment: InsertPayment): Promise<Payment> {
-    const [newPayment] = await db
+    const result = await db
       .insert(payments)
       .values(payment)
-      .returning();
-    
-    return newPayment;
+      .execute();
+
+    const id = Number(result[0].insertId);
+    return {
+      id,
+      ...payment,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as Payment;
   }
   
   async getUserPayments(userId: number, limit = 10): Promise<Payment[]> {
@@ -540,20 +573,25 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updatePaymentStatus(id: number, status: string): Promise<Payment> {
-    const [updatedPayment] = await db
+    await db
       .update(payments)
       .set({ 
         status, 
         updatedAt: new Date() 
       })
       .where(eq(payments.id, id))
-      .returning();
+      .execute();
     
-    if (!updatedPayment) {
+    const [payment] = await db
+      .select()
+      .from(payments)
+      .where(eq(payments.id, id));
+
+    if (!payment) {
       throw new Error("Payment not found");
     }
     
-    return updatedPayment;
+    return payment;
   }
   
   
@@ -578,17 +616,28 @@ export class DatabaseStorage implements IStorage {
       
       return await db.transaction(async (tx) => {
         
-        const [newReward] = await tx
+        const result = await tx
           .insert(loginRewards)
           .values({
             ...reward,
             
             userId: reward.userId 
           })
-          .returning();
-        
-        if (!newReward) {
+          .execute();
+
+        const insertedId = Number(result[0].insertId);
+        if (!insertedId) {
           console.error(`ERROR: Failed to create login reward for user ID ${reward.userId}`);
+          throw new Error(`Failed to create login reward for user ID ${reward.userId}`);
+        }
+
+        const [newReward] = await tx
+          .select()
+          .from(loginRewards)
+          .where(eq(loginRewards.id, insertedId));
+
+        if (!newReward) {
+          console.error(`ERROR: Failed to fetch created login reward for user ID ${reward.userId}`);
           throw new Error(`Failed to create login reward for user ID ${reward.userId}`);
         }
         
@@ -1045,7 +1094,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     
-    const [newTicket] = await db
+    const ticketResult = await db
       .insert(supportTickets)
       .values({
         userId,
@@ -1054,32 +1103,43 @@ export class DatabaseStorage implements IStorage {
         createdAt: new Date(),
         updatedAt: new Date()
       })
-      .returning();
-    
-    if (!newTicket) {
+      .execute();
+
+    const ticketId = Number(ticketResult[0].insertId);
+    if (!ticketId) {
       throw new Error("Failed to create support ticket");
     }
-    
-    
-    const [firstMessage] = await db
+
+    const messageResult = await db
       .insert(ticketMessages)
       .values({
-        ticketId: newTicket.id,
+        ticketId,
         userId,
         message,
         isAdmin: false,
         createdAt: new Date()
       })
-      .returning();
-    
-    
+      .execute();
+
+    const messageId = Number(messageResult[0].insertId);
+
     return {
-      ...newTicket,
+      id: ticketId,
+      userId,
+      subject,
+      status: 'open',
+      createdAt: new Date(),
+      updatedAt: new Date(),
       username: user.username,
       messages: [
         {
-          ...firstMessage,
-          username: user.username
+          id: messageId,
+          ticketId,
+          userId,
+          message,
+          isAdmin: false,
+          createdAt: new Date(),
+          username: user.username,
         }
       ]
     };
@@ -1099,7 +1159,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     
-    const [newMessage] = await db
+const messageResult = await db
       .insert(ticketMessages)
       .values({
         ticketId,
@@ -1108,8 +1168,9 @@ export class DatabaseStorage implements IStorage {
         isAdmin,
         createdAt: new Date()
       })
-      .returning();
-    
+      .execute();
+
+    const newMessageId = Number(messageResult[0].insertId);
     
     if (isAdmin && ticket.status === 'open') {
       await this.updateSupportTicketStatus(ticketId, 'in-progress');
@@ -1135,37 +1196,40 @@ export class DatabaseStorage implements IStorage {
     }
     
     
-    const [updatedTicket] = await db
+    await db
       .update(supportTickets)
       .set({
         status,
         updatedAt: new Date()
       })
       .where(eq(supportTickets.id, ticketId))
-      .returning();
-    
-    if (!updatedTicket) {
-      return undefined;
-    }
-    
-    
+      .execute();
+
     return this.getSupportTicket(ticketId);
   }
   
   
   async createSubscription(subscription: InsertSubscription): Promise<Subscription> {
-    const [newSubscription] = await db
+    const result = await db
       .insert(subscriptions)
       .values(subscription)
-      .returning();
+      .execute();
+
+    const id = Number(result[0].insertId);
+    if (!id) {
+      throw new Error('Failed to create subscription');
+    }
     
     
     
     if (subscription.status === 'active') {
       await this.updateUserSubscriptionTier(subscription.userId, subscription.tier);
     }
-    
-    return newSubscription;
+
+    return {
+      id,
+      ...subscription,
+    } as Subscription;
   }
   
   async getUserSubscription(userId: number): Promise<Subscription | undefined> {
@@ -1189,14 +1253,20 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateSubscription(id: number, updates: Partial<Subscription>): Promise<Subscription> {
-    const [updatedSubscription] = await db
+    await db
       .update(subscriptions)
       .set({ 
         ...updates,
         updatedAt: new Date() 
       })
       .where(eq(subscriptions.id, id))
-      .returning();
+      .execute();
+    
+    const updatedSubscription = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.id, id))
+      .then(rows => rows[0]);
     
     if (!updatedSubscription) {
       throw new Error("Subscription not found");
@@ -1343,34 +1413,33 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateUserSubscriptionTier(userId: number, tier: string | null): Promise<User> {
-    const [updatedUser] = await db
+    await db
       .update(users)
       .set({ 
         subscriptionTier: tier
       })
       .where(eq(users.id, userId))
-      .returning();
-    
+      .execute();
+
+    const updatedUser = await this.getUser(userId);
     if (!updatedUser) {
       throw new Error("User not found");
     }
-    
+
     return updatedUser;
   }
 
-  
   async banUser(userId: number, adminId: number, reason: string): Promise<User> {
     const user = await this.getUser(userId);
     if (!user) {
       throw new Error("User not found");
     }
-    
-    
+
     if (user.isOwner) {
       throw new Error("Cannot ban an owner account");
     }
-    
-    const [updatedUser] = await db
+
+    await db
       .update(users)
       .set({ 
         isBanned: true,
@@ -1379,17 +1448,23 @@ export class DatabaseStorage implements IStorage {
         bannedBy: adminId
       })
       .where(eq(users.id, userId))
-      .returning();
-    
+      .execute();
+
+    const updatedUser = await this.getUser(userId);
     if (!updatedUser) {
       throw new Error("User not found");
     }
-    
+
     return updatedUser;
   }
-  
+
   async unbanUser(userId: number): Promise<User> {
-    const [updatedUser] = await db
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await db
       .update(users)
       .set({ 
         isBanned: false,
@@ -1398,15 +1473,16 @@ export class DatabaseStorage implements IStorage {
         bannedBy: null
       })
       .where(eq(users.id, userId))
-      .returning();
-    
+      .execute();
+
+    const updatedUser = await this.getUser(userId);
     if (!updatedUser) {
       throw new Error("User not found");
     }
-    
+
     return updatedUser;
   }
-  
+
   async getBannedUsers(limit = 50, offset = 0): Promise<User[]> {
     const bannedUsers = await db
       .select()
@@ -1415,28 +1491,26 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(users.bannedAt))
       .limit(limit)
       .offset(offset);
-    
+
     return bannedUsers;
   }
-  
-  
+
   async createBanAppeal(userId: number, reason: string): Promise<BanAppealType> {
     const user = await this.getUser(userId);
     if (!user) {
       throw new Error("User not found");
     }
-    
+
     if (!user.isBanned) {
       throw new Error("User is not banned");
     }
-    
-    
+
     const existingAppeal = await this.getUserBanAppeal(userId);
     if (existingAppeal && (existingAppeal.status === 'pending' || existingAppeal.status === 'approved')) {
-      throw new Error("User already has an active appeal");
+      throw new Error("User already has an active ban appeal");
     }
-    
-    const [appeal] = await db
+
+    const result = await db
       .insert(banAppeals)
       .values({
         userId,
@@ -1445,11 +1519,25 @@ export class DatabaseStorage implements IStorage {
         createdAt: new Date(),
         updatedAt: new Date()
       })
-      .returning();
-    
+      .execute();
+
+    const id = Number(result[0].insertId);
+    if (!id) {
+      throw new Error("Failed to create ban appeal");
+    }
+
+    const [appeal] = await db
+      .select()
+      .from(banAppeals)
+      .where(eq(banAppeals.id, id));
+
+    if (!appeal) {
+      throw new Error("Failed to fetch created ban appeal");
+    }
+
     return appeal;
   }
-  
+
   async getBanAppeals(status?: string, limit = 50, offset = 0): Promise<BanAppealType[]> {
     if (status) {
       return await db
@@ -1468,7 +1556,7 @@ export class DatabaseStorage implements IStorage {
         .offset(offset);
     }
   }
-  
+
   async getUserBanAppeal(userId: number): Promise<BanAppealType | undefined> {
     const [appeal] = await db
       .select()
@@ -1476,27 +1564,22 @@ export class DatabaseStorage implements IStorage {
       .where(eq(banAppeals.userId, userId))
       .orderBy(desc(banAppeals.createdAt))
       .limit(1);
-    
+
     return appeal;
   }
-  
+
   async respondToBanAppeal(appealId: number, adminId: number, status: string, response: string): Promise<BanAppealType> {
-    
-    if (status !== 'approved' && status !== 'rejected') {
-      throw new Error("Invalid status. Must be 'approved' or 'rejected'");
-    }
-    
     const [appeal] = await db
       .select()
       .from(banAppeals)
-      .where(eq(banAppeals.id, appealId));
-    
+      .where(eq(banAppeals.id, appealId))
+      .limit(1);
+
     if (!appeal) {
-      throw new Error("Appeal not found");
+      throw new Error('Appeal not found');
     }
-    
-    
-    const [updatedAppeal] = await db
+
+    await db
       .update(banAppeals)
       .set({
         status,
@@ -1505,23 +1588,29 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .where(eq(banAppeals.id, appealId))
-      .returning();
-    
-    
+      .execute();
+
     if (status === 'approved') {
       await this.unbanUser(appeal.userId);
     }
-    
+
+    const [updatedAppeal] = await db
+      .select()
+      .from(banAppeals)
+      .where(eq(banAppeals.id, appealId));
+
+    if (!updatedAppeal) {
+      throw new Error('Appeal update failed');
+    }
+
     return updatedAppeal;
   }
 
-  
   async createPasswordResetToken(userId: number, token: string, expiryHours: number): Promise<PasswordResetToken> {
-    
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + expiryHours);
 
-    const [resetToken] = await db
+    const result = await db
       .insert(passwordResetTokens)
       .values({
         userId,
@@ -1529,8 +1618,22 @@ export class DatabaseStorage implements IStorage {
         expiresAt,
         isUsed: false
       })
-      .returning();
-    
+      .execute();
+
+    const id = Number(result[0].insertId);
+    if (!id) {
+      throw new Error('Failed to create password reset token');
+    }
+
+    const [resetToken] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(eq(passwordResetTokens.id, id));
+
+    if (!resetToken) {
+      throw new Error('Failed to fetch created password reset token');
+    }
+
     return resetToken;
   }
 
@@ -1539,35 +1642,41 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(passwordResetTokens)
       .where(eq(passwordResetTokens.token, token));
-    
+
     return resetToken;
   }
 
   async markPasswordResetTokenAsUsed(id: number): Promise<PasswordResetToken> {
-    const [updatedToken] = await db
+    await db
       .update(passwordResetTokens)
       .set({ isUsed: true })
       .where(eq(passwordResetTokens.id, id))
-      .returning();
-    
+      .execute();
+
+    const [updatedToken] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(eq(passwordResetTokens.id, id));
+
     if (!updatedToken) {
       throw new Error("Token not found");
     }
-    
+
     return updatedToken;
   }
 
   async updateUserPassword(userId: number, newPassword: string): Promise<User> {
-    const [updatedUser] = await db
+    await db
       .update(users)
       .set({ password: newPassword })
       .where(eq(users.id, userId))
-      .returning();
-    
+      .execute();
+
+    const updatedUser = await this.getUser(userId);
     if (!updatedUser) {
       throw new Error("User not found");
     }
-    
+
     return updatedUser;
   }
 
@@ -1576,24 +1685,24 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(users)
       .where(eq(users.email, email));
-    
+
     return user;
   }
 
   async updateUserEmail(userId: number, email: string): Promise<User> {
-    const [updatedUser] = await db
+    await db
       .update(users)
       .set({ email })
       .where(eq(users.id, userId))
-      .returning();
-    
+      .execute();
+
+    const updatedUser = await this.getUser(userId);
     if (!updatedUser) {
       throw new Error("User not found");
     }
-    
+
     return updatedUser;
   }
 }
-
 
 export const storage = new DatabaseStorage();

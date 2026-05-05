@@ -7,7 +7,6 @@ import {
   Home,
   Dices,
   TrendingUp,
-  Coins,
   Clock,
   MessageSquare,
   Gift,
@@ -74,6 +73,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   
   const isAdmin = user?.isAdmin || user?.isOwner;
+  const mainClassName = cn(
+    "flex-1 p-4 lg:p-6",
+    isMobile ? "pb-28" : "pb-6"
+  );
   
   const navigationItems = [
     { href: '/', icon: <Home size={18} />, label: 'Home' },
@@ -83,7 +86,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
     { href: '/roulette', icon: <Dices size={18} />, label: 'Roulette' },
     { href: '/blackjack', icon: <Dices size={18} />, label: 'Blackjack' },
     { href: '/plinko', icon: <Dices size={18} />, label: 'Plinko' },
-    { href: '/purchase', icon: <Coins size={18} />, label: 'Buy Coins' },
     { href: '/history', icon: <Clock size={18} />, label: 'History' },
     { href: '/rewards', icon: <Gift size={18} />, label: 'Rewards' },
     { href: '/subscriptions', icon: <Crown size={18} />, label: 'VIP' },
@@ -97,7 +99,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
   
   const mobilePrimaryNav = [
     { href: '/', icon: <Home size={18} />, label: 'Home' },
-    { href: '/purchase', icon: <Coins size={18} />, label: 'Buy' },
     { href: '/rewards', icon: <Gift size={18} />, label: 'Rewards' },
   ];
   
@@ -416,7 +417,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
               </div>
             </header>
             
-            <main className="flex-1 p-4 lg:p-6">
+            <main className={mainClassName}>
               {children}
             </main>
           </div>

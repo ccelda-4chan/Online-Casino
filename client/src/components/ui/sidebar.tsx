@@ -92,7 +92,6 @@ export default function Sidebar({ mobile = false, onClose }: SidebarProps) {
             <NavLink href="/" icon="ri-home-4-line" label="Home" />
             <NavLink href="/history" icon="ri-history-line" label="History" />
             <NavLink href="/rewards" icon="ri-gift-2-line text-pink-500" label="Daily Rewards" />
-            <NavLink href="/purchase" icon="ri-coins-line text-yellow-500" label="Buy Coins" />
             <NavLink href="/subscriptions" icon="ri-vip-crown-2-line text-amber-500" label="VIP Subscriptions" />
             {user?.isAdmin && (
               <NavLink 
@@ -121,7 +120,6 @@ export default function Sidebar({ mobile = false, onClose }: SidebarProps) {
         <div className="bg-[#2A2A2A] rounded-lg p-4 mb-4">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm text-gray-400">Balance</p>
-            <span className="text-xs bg-[#5465FF] bg-opacity-20 text-[#5465FF] px-2 py-1 rounded">DEMO</span>
           </div>
           <div className="flex items-center space-x-1 mb-3">
             <i className="ri-coin-line text-yellow-500"></i>
@@ -129,14 +127,8 @@ export default function Sidebar({ mobile = false, onClose }: SidebarProps) {
               {user ? formatCurrency(user.balance) : '0.00'}
             </span>
           </div>
-          <Link href="/purchase" onClick={onClose}>
-            <Button variant="outline" size="sm" className="w-full">
-              <i className="ri-add-circle-line mr-1"></i>
-              Buy Coins
-            </Button>
-          </Link>
         </div>
-        
+
         {user && (
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-2">
@@ -168,8 +160,7 @@ export default function Sidebar({ mobile = false, onClose }: SidebarProps) {
             </button>
           </div>
         )}
-        
-        {}
+
         <div className="flex justify-center space-x-4 text-xs text-gray-400">
           <Link href="/privacy-policy" onClick={onClose}>
             <span className="hover:text-white hover:underline">Privacy Policy</span>

@@ -6,9 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default function BlackjackPage() {
   return (
     <MainLayout>
-      <div className="container mx-auto p-4">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="game" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsList className="grid w-full grid-cols-1 md:grid-cols-2 mb-8 gap-3">
             <TabsTrigger value="game">Play Blackjack</TabsTrigger>
             <TabsTrigger value="history">Your History</TabsTrigger>
           </TabsList>

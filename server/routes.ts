@@ -118,49 +118,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   app.post("/api/coins/create-payment-intent", authMiddleware, async (req: Request, res: Response) => {
-    try {
-      const { packageId } = createPaymentIntentSchema.parse(req.body);
-      
-      
-      const selectedPackage = coinPackages.find(pkg => pkg.id === packageId);
-      if (!selectedPackage) {
-        return res.status(400).json({ error: "Invalid package ID" });
-      }
-      
-      
-      const amount = Math.round(selectedPackage.price * 100);
-      
-      
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount,
-        currency: "usd",
-        metadata: {
-          userId: req.user!.id.toString(),
-          packageId,
-          coins: selectedPackage.coins.toString()
-        }
-      });
-      
-      
-      await storage.createPayment({
-        userId: req.user!.id,
-        amount: selectedPackage.price.toString(),
-        coins: selectedPackage.coins.toString(),
-        stripeSessionId: paymentIntent.id,
-        status: 'pending'
-      });
-      
-      
-      res.json({
-        clientSecret: paymentIntent.client_secret,
-        packageDetails: selectedPackage
-      });
-    } catch (error: any) {
-      console.error("Error creating payment intent:", error);
-      res.status(400).json({
-        error: error.message || "Failed to create payment"
-      });
-    }
+    return res.status(403).json({
+      error: "Coin purchases are temporarily disabled. Admin crediting remains available."
+    });
   });
   
   

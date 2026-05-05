@@ -101,7 +101,7 @@ export default function HomePage() {
                       <span className="font-medium text-amber-300">Bronze</span>
                     </div>
                     <p className="text-xs text-amber-200/80">300 daily coins</p>
-                    <p className="text-xs text-amber-200/80">$2.99/month</p>
+                    <p className="text-xs text-amber-200/80">₱2.99/month</p>
                   </div>
                   
                   <div className="bg-black/20 p-3 rounded-lg border border-gray-400/30">
@@ -113,7 +113,7 @@ export default function HomePage() {
                     </div>
                     <p className="text-xs text-gray-300/80">600 daily coins</p>
                     <p className="text-xs text-gray-300/80">1.1x multiplier</p>
-                    <p className="text-xs text-gray-300/80">$5.99/month</p>
+                    <p className="text-xs text-gray-300/80">₱5.99/month</p>
                   </div>
                   
                   <div className="bg-black/20 p-3 rounded-lg border border-yellow-500/30">
@@ -125,7 +125,7 @@ export default function HomePage() {
                     </div>
                     <p className="text-xs text-yellow-200/80">1000 daily coins</p>
                     <p className="text-xs text-yellow-200/80">1.25x multiplier</p>
-                    <p className="text-xs text-yellow-200/80">$9.99/month</p>
+                    <p className="text-xs text-yellow-200/80">₱9.99/month</p>
                   </div>
                 </div>
                 

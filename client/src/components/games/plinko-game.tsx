@@ -39,7 +39,40 @@ const ROWS = 10;
 const BUCKET_COUNT = 11; 
 const PIN_SIZE = 14; 
 const PIN_RADIUS = PIN_SIZE / 2;
+const PIN_START_Y = 40;
 
+const getPinCoordinates = (
+  row: number,
+  position: number,
+  dimensions: {
+    pinSpacingX: number;
+    pinSpacingY: number;
+    boardWidth: number;
+    boardHeight: number;
+  }
+) => {
+  const pinsInRow = row + 1;
+  const rowWidth = (pinsInRow - 1) * dimensions.pinSpacingX;
+  const startX = dimensions.boardWidth / 2 - rowWidth / 2;
+
+  return {
+    x: startX + position * dimensions.pinSpacingX,
+    y: PIN_START_Y + row * dimensions.pinSpacingY,
+  };
+};
+
+const getBucketCenterX = (
+  bucket: number,
+  dimensions: {
+    boardWidth: number;
+    pinSpacingX: number;
+    pinSpacingY: number;
+    boardHeight: number;
+  }
+) => {
+  const bucketWidth = dimensions.boardWidth / BUCKET_COUNT;
+  return bucket * bucketWidth + bucketWidth / 2;
+};
 
 
 const calculateDimensions = (containerWidth: number) => {
@@ -84,39 +117,25 @@ const calculatePinsWithSpacing = (spacingX: number, spacingY: number): PinPositi
   const pins: PinPosition[] = [];
   const boardWidth = spacingX * BUCKET_COUNT;
   const centerX = boardWidth / 2;
-  
-  
-  
-  const pinRows = ROWS - 1; 
-  
-  
-  const bucketHeight = 60;
-  
-  const availablePinHeight = boardWidth - bucketHeight;
-  
-  const pinStartY = 60; 
-  
+
+  const pinRows = ROWS - 1;
+
   for (let row = 0; row < pinRows; row++) {
-    
     const pinsInRow = row + 1;
     const rowWidth = (pinsInRow - 1) * spacingX;
-    
     const startX = centerX - rowWidth / 2;
-    
-    
-    
-    const yPos = pinStartY + (row * (availablePinHeight / pinRows));
-    
+    const yPos = PIN_START_Y + row * spacingY;
+
     for (let i = 0; i < pinsInRow; i++) {
       pins.push({
         row,
         x: startX + i * spacingX,
         y: yPos,
-        radius: PIN_RADIUS
+        radius: PIN_RADIUS,
       });
     }
   }
-  
+
   return pins;
 };
 
@@ -465,72 +484,18 @@ export default function PlinkoGame({
       const pathStep = fullPath[currentStep];
       let newX = 0;
       let newY = 0;
-      
+
       if (pathStep.row < ROWS - 1) {
-        
-        const pinsInRow = pathStep.row + 1;
-        const centerX = dimensions.boardWidth / 2;
-        const rowWidth = (pinsInRow - 1) * dimensions.pinSpacingX;
-        const startX = centerX - rowWidth / 2;
-        newX = startX + pathStep.position * dimensions.pinSpacingX;
-        
-        
-        const bucketHeight = 60;
-        const availablePinHeight = dimensions.boardWidth - bucketHeight;
-        const pinStartY = 60; 
-        newY = pinStartY + (pathStep.row * (availablePinHeight / (ROWS - 1)));
+        const coords = getPinCoordinates(pathStep.row, pathStep.position, dimensions);
+        newX = coords.x;
+        newY = coords.y;
       } else {
-        
-        const bucketWidth = dimensions.pinSpacingX;
-        const totalBucketsWidth = bucketWidth * BUCKET_COUNT;
-        const centerX = dimensions.boardWidth / 2;
-        const startX = centerX - (totalBucketsWidth / 2);
-        
-        
         const safePosition = Math.min(Math.max(0, pathStep.position), BUCKET_COUNT - 1);
-        
-        newX = startX + safePosition * bucketWidth + bucketWidth / 2;
-        
-        newY = dimensions.boardHeight - 45; 
+        newX = getBucketCenterX(safePosition, dimensions);
+        newY = dimensions.boardHeight - 30;
       }
-      
-      
-      
-      const progress = currentStep / totalSteps;
-      
-      
-      let jitterAmount = 0;
-      if (progress < 0.2) {
-        
-        jitterAmount = 1 + (progress * 5); 
-      } else if (progress < 0.8) {
-        
-        jitterAmount = 4;
-      } else {
-        
-        jitterAmount = 4 * (1 - ((progress - 0.8) / 0.2));
-      }
-      
-      
-      const jitterX = Math.random() * jitterAmount - jitterAmount/2;
-      
-      
-      const jitterY = currentStep < totalSteps - 2 
-        ? Math.random() * 2 - 1 
-        : 0;
-      
-      
-      let deflectionX = 0;
-      if (currentStep > 0 && currentStep < totalSteps - 1 && fullPath[currentStep-1].position !== fullPath[currentStep].position) {
-        
-        deflectionX = fullPath[currentStep].position > fullPath[currentStep-1].position ? -2 : 2;
-      }
-      
-      
-      setBallPosition({ 
-        x: newX + jitterX + deflectionX, 
-        y: newY + jitterY 
-      });
+
+      setBallPosition({ x: newX, y: newY });
       
       
       if (currentStep > 0 && currentStep < totalSteps - 1) {
@@ -541,34 +506,29 @@ export default function PlinkoGame({
       currentStep++;
       
       
-      const nextDuration = getStepDuration(currentStep, totalSteps);
-      
-      
+      const nextDuration = 120 + Math.floor((currentStep / totalSteps) * 50);
       animationRef.current = setTimeout(animate, nextDuration);
     };
-    
-    
-    const initialDuration = getStepDuration(0, totalSteps);
+
+    const initialDuration = 120;
     animationRef.current = setTimeout(animate, initialDuration);
   };
-  
-  
+
   const generateRandomPath = (): PathStep[] => {
     const path: PathStep[] = [];
     let position = 0;
-    
-    for (let row = 0; row < ROWS; row++) {
+    const pinRows = ROWS - 1;
+
+    for (let row = 0; row < pinRows; row++) {
       path.push({ row, position });
-      
-      
-      if (Math.random() > 0.5 && position < row) {
+      const maxPosition = row + 1;
+      if (Math.random() > 0.5 && position < maxPosition) {
         position += 1;
       }
     }
-    
-    
+
+    path.push({ row: ROWS - 1, position });
     path.push({ row: ROWS, position });
-    
     return path;
   };
   

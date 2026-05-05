@@ -91,10 +91,10 @@ export default function AuthPage() {
     <div className="min-h-screen bg-[#121212] flex flex-col md:flex-row">
       {}
       <div className="w-full md:w-1/2 flex items-center justify-center p-6">
-        <Card className="w-full max-w-md bg-[#1E1E1E] border-[#333333]">
+        <Card className="w-full max-w-md bg-[#111827] border-[#333333] shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
           <CardContent className="pt-6">
             <div className="text-center mb-6">
-              <h1 className="text-2xl font-heading font-bold bg-gradient-to-r from-[#5465FF] to-[#00E701] bg-clip-text text-transparent mb-2">
+              <h1 className="text-2xl font-heading font-bold bg-gradient-to-r from-[#00247d] via-white to-[#c60b1e] bg-clip-text text-transparent mb-2">
                 RAGE BET
               </h1>
               <p className="text-gray-400">Sign in to start playing or create a new account</p>
@@ -302,7 +302,7 @@ export default function AuthPage() {
       </div>
       
       {}
-      <div className="w-full md:w-1/2 bg-gradient-to-br from-[#1E1E1E] to-[#121212] p-6 flex items-center justify-center">
+      <div className="w-full md:w-1/2 bg-gradient-to-br from-[#00247d] via-[#0f172a] to-[#c60b1e] p-6 flex items-center justify-center">
         <div className="max-w-lg">
           <div className="text-center md:text-left mb-6">
             <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4">
@@ -340,7 +340,7 @@ export default function AuthPage() {
               </div>
               <div>
                 <h3 className="font-heading font-bold mb-1">Virtual Currency</h3>
-                <p className="text-gray-400 text-sm">Start with 10,000 demo credits</p>
+                <p className="text-gray-400 text-sm">Manage your balance and play with real casino credits</p>
               </div>
             </div>
             
@@ -358,7 +358,7 @@ export default function AuthPage() {
           <div className="text-center md:text-left">
             <div className="inline-flex items-center space-x-2 text-gray-400 text-sm">
               <i className="ri-information-line"></i>
-              <span>For entertainment purposes only. No real money is used.</span>
+              <span>Enjoy the PHP-powered casino experience with virtual balance tracking.</span>
             </div>
           </div>
         </div>

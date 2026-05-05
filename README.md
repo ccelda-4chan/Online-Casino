@@ -20,6 +20,14 @@ This is a side project I am currently working on so keep in mind that everything
 
 ---
 
+# InfinityFree Deployment Note
+
+This project includes a static-only fallback mode for InfinityFree deployments.
+
+- InfinityFree does not support Node.js or custom backend servers.
+- This repo now assumes a real backend deployment for auth, payments, game state, and admin credit features.
+- Coin top-up functionality is currently disabled; admin balance adjustments remain available through the admin panel.
+
 # Admin Access
 
 Log in as an admin or owner to access the admin panel at `/admin`.

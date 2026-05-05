@@ -25,22 +25,18 @@ export const SLOT_PAYOUTS = {
 
 export const formatCurrency = (value: number | string) => {
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
-  
-  
-  if (isNaN(numValue)) {
-    return "0.00";
+
+  if (isNaN(numValue) || numValue === 0) {
+    return "₱0.00";
   }
-  
-  
-  if (numValue === 0) {
-    return "0.00";
-  }
-  
-  
-  return numValue.toLocaleString('en-US', {
+
+  return new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    currencyDisplay: 'symbol',
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
+    maximumFractionDigits: 2,
+  }).format(numValue);
 };
 
 

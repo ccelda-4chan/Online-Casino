@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
+import type { Stripe } from '@stripe/stripe-js';
 import { SubscriptionPlan } from '@shared/schema';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { ProtectedRoute } from '@/lib/protected-route';
@@ -37,7 +37,6 @@ import {
 
 
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 
 interface PlanCardProps {
@@ -67,7 +66,7 @@ function PlanCard({ plan, isCurrentPlan, onSelect }: PlanCardProps) {
         <CardDescription>{plan.description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-bold mb-4">${plan.price.toFixed(2)}<span className="text-sm font-normal">/month</span></div>
+        <div className="text-3xl font-bold mb-4">₱{plan.price.toFixed(2)}<span className="text-sm font-normal">/month</span></div>
         <ul className="space-y-2">
           {plan.features.map((feature, index) => (
             <li key={index} className="flex items-start">
@@ -142,7 +141,7 @@ function SubscriptionForm({ clientSecret, onSuccess, onCancel, plan }: { clientS
         <div className="bg-muted p-3 rounded-md mb-4">
           <p className="flex justify-between">
             <span>Monthly subscription</span>
-            <span className="font-semibold">${plan.price.toFixed(2)}/month</span>
+            <span className="font-semibold">₱{plan.price.toFixed(2)}/month</span>
           </p>
         </div>
       </div>
@@ -319,16 +318,25 @@ function SubscriptionPageContent() {
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
+
+  useEffect(() => {
+    const key = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+    if (!key) return;
+
+    import('@stripe/stripe-js')
+      .then((module) => setStripePromise(module.loadStripe(key)))
+      .catch(() => setStripePromise(null));
+  }, []);
   
   
   const { data: plans = [], isLoading: plansLoading } = useQuery({
     queryKey: ['/api/subscriptions/plans'],
     queryFn: async () => {
-      const res = await fetch('/api/subscriptions/plans');
-      if (!res.ok) throw new Error('Failed to fetch subscription plans');
+      const res = await apiRequest('GET', '/api/subscriptions/plans');
       return res.json();
     }
   });
@@ -341,12 +349,7 @@ function SubscriptionPageContent() {
   } = useQuery({
     queryKey: ['/api/subscriptions/current'],
     queryFn: async () => {
-      const res = await fetch('/api/subscriptions/current', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (!res.ok) throw new Error('Failed to fetch subscription status');
+      const res = await apiRequest('GET', '/api/subscriptions/current');
       return res.json();
     },
     enabled: !!user
@@ -403,6 +406,17 @@ function SubscriptionPageContent() {
   
   
   if (showPaymentForm && selectedPlan && clientSecret) {
+    if (!stripePromise) {
+      return (
+        <div className="max-w-md mx-auto my-8 rounded-xl border border-red-500/20 bg-red-600/10 p-6 text-center">
+          <p className="text-red-100 font-semibold mb-2">Stripe configuration is missing.</p>
+          <p className="text-sm text-red-200">
+            Payments cannot be processed until <code>VITE_STRIPE_PUBLIC_KEY</code> is configured.
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className="max-w-md mx-auto my-8">
         <Elements stripe={stripePromise} options={{ clientSecret }}>

@@ -1,35 +1,35 @@
-import { pgTable, text, serial, integer, boolean, timestamp, decimal } from "drizzle-orm/pg-core";
+import { mysqlTable, varchar, text, int, boolean, timestamp, decimal } from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  email: text("email").notNull(),
-  password: text("password").notNull(),
+export const users = mysqlTable("users", {
+  id: int("id").primaryKey().autoincrement(),
+  username: varchar("username", { length: 191 }).notNull().unique(),
+  email: varchar("email", { length: 255 }).notNull(),
+  password: varchar("password", { length: 255 }).notNull(),
   balance: decimal("balance", { precision: 10, scale: 2 }).default("10000").notNull(),
-  playCount: integer("play_count").default(0).notNull(),
+  playCount: int("play_count").default(0).notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   isOwner: boolean("is_owner").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastLogin: timestamp("last_login").defaultNow().notNull(),
   lastRewardDate: timestamp("last_reward_date"),
-  currentLoginStreak: integer("current_login_streak").default(0).notNull(),
+  currentLoginStreak: int("current_login_streak").default(0).notNull(),
   isBanned: boolean("is_banned").default(false).notNull(),
   banReason: text("ban_reason"),
   bannedAt: timestamp("banned_at"),
-  bannedBy: integer("banned_by"),
-  subscriptionTier: text("subscription_tier").default("none"), 
-  stripeCustomerId: text("stripe_customer_id"),
-  stripeSubscriptionId: text("stripe_subscription_id"),
-  subscriptionStatus: text("subscription_status").default("inactive"), 
+  bannedBy: int("banned_by"),
+  subscriptionTier: varchar("subscription_tier", { length: 50 }).default("none"),
+  stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+  subscriptionStatus: varchar("subscription_status", { length: 50 }).default("inactive"),
   subscriptionEndsAt: timestamp("subscription_ends_at"),
 });
 
-export const transactions = pgTable("transactions", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  gameType: text("game_type").notNull(),
+export const transactions = mysqlTable("transactions", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull(),
+  gameType: varchar("game_type", { length: 50 }).notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   multiplier: decimal("multiplier", { precision: 10, scale: 4 }).notNull(),
   payout: decimal("payout", { precision: 10, scale: 2 }).notNull(),
@@ -39,56 +39,56 @@ export const transactions = pgTable("transactions", {
   gameData: text("game_data"),
 });
 
-export const coinTransactions = pgTable("coin_transactions", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(), 
+export const coinTransactions = mysqlTable("coin_transactions", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   reason: text("reason").notNull(),
-  adminId: integer("admin_id").notNull(), 
+  adminId: int("admin_id").notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
-export const payments = pgTable("payments", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(), 
-  coins: decimal("coins", { precision: 10, scale: 2 }).notNull(), 
-  stripeSessionId: text("stripe_session_id").notNull(),
-  status: text("status").notNull().default("pending"), 
+export const payments = mysqlTable("payments", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  coins: decimal("coins", { precision: 10, scale: 2 }).notNull(),
+  stripeSessionId: varchar("stripe_session_id", { length: 255 }).notNull(),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const loginRewards = pgTable("login_rewards", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  day: integer("day").notNull(), 
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(), 
+export const loginRewards = mysqlTable("login_rewards", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull(),
+  day: int("day").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const subscriptions = pgTable("subscriptions", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  tier: text("tier").notNull(), 
-  stripeSubscriptionId: text("stripe_subscription_id").notNull(),
-  status: text("status").notNull(), 
+export const subscriptions = mysqlTable("subscriptions", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull(),
+  tier: varchar("tier", { length: 50 }).notNull(),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }).notNull(),
+  status: varchar("status", { length: 50 }).notNull(),
   startDate: timestamp("start_date").defaultNow().notNull(),
   endDate: timestamp("end_date"),
-  priceId: text("price_id").notNull(), 
-  priceAmount: decimal("price_amount", { precision: 10, scale: 2 }).notNull(), 
-  metadata: text("metadata"), 
+  priceId: text("price_id").notNull(),
+  priceAmount: decimal("price_amount", { precision: 10, scale: 2 }).notNull(),
+  metadata: text("metadata"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const banAppeals = pgTable("ban_appeals", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  reason: text("reason").notNull(), 
-  status: text("status").default("pending").notNull(), 
-  adminResponse: text("admin_response"), 
-  adminId: integer("admin_id"), 
+export const banAppeals = mysqlTable("ban_appeals", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull(),
+  reason: text("reason").notNull(),
+  status: varchar("status", { length: 50 }).default("pending").notNull(),
+  adminResponse: text("admin_response"),
+  adminId: int("admin_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -462,19 +462,19 @@ export type PokerGameState = z.infer<typeof pokerGameStateSchema>;
 
 
 
-export const supportTickets = pgTable("support_tickets", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+export const supportTickets = mysqlTable("support_tickets", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull(),
   subject: text("subject").notNull(),
   status: text("status").notNull().default("open"), 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const ticketMessages = pgTable("ticket_messages", {
-  id: serial("id").primaryKey(),
-  ticketId: integer("ticket_id").notNull(),
-  userId: integer("user_id").notNull(),
+export const ticketMessages = mysqlTable("ticket_messages", {
+  id: int("id").primaryKey().autoincrement(),
+  ticketId: int("ticket_id").notNull(),
+  userId: int("user_id").notNull(),
   message: text("message").notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -497,9 +497,9 @@ export type InsertTicketMessage = z.infer<typeof insertTicketMessageSchema>;
 export type TicketMessage = typeof ticketMessages.$inferSelect;
 
 
-export const passwordResetTokens = pgTable("password_reset_tokens", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+export const passwordResetTokens = mysqlTable("password_reset_tokens", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull(),
   token: text("token").notNull().unique(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

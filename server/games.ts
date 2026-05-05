@@ -1624,42 +1624,19 @@ export async function playPlinko(req: Request, res: Response) {
     const targetPosition = targetIndex;
     
     
-    for (let r = 0; r < rows; r++) {
-      
-      
-      const idealPosition = (targetPosition * r) / (rows - 1);
-      
-      
-      
-      const randomFactor = (rows - r) / rows;
-      
-      
-      
-      let goRight;
-      if (targetPosition <= 1 && r > rows/2) {
-        
-        goRight = Math.random() < 0.2;
-      } else if (targetPosition >= multipliers.length - 2 && r > rows/2) {
-        
-        goRight = currentPosition < r || Math.random() < 0.8;
-      } else {
-        
-        goRight = currentPosition < idealPosition || 
-                  (Math.random() < 0.5 && Math.random() < randomFactor);
-      }
-      
-      
+    const pinRows = rows - 1;
+    for (let r = 0; r < pinRows; r++) {
       path.push({ row: r, position: currentPosition });
-      
-      
-      if (goRight && currentPosition < r) {
+      const maxPosition = r + 1;
+      const remainingSteps = pinRows - r;
+      const requiredMoves = Math.max(0, targetPosition - currentPosition);
+      const moveProbability = remainingSteps > 0 ? Math.min(Math.max(requiredMoves / remainingSteps, 0.15), 0.85) : 0;
+      if (Math.random() < moveProbability && currentPosition < maxPosition) {
         currentPosition += 1;
       }
-      
-      
     }
-    
-    
+
+    path.push({ row: rows - 1, position: currentPosition });
     path.push({ row: rows, position: currentPosition });
     
     

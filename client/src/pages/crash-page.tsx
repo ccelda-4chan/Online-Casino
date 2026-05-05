@@ -28,7 +28,7 @@ export default function CrashPage() {
   
   return (
     <MainLayout>
-      <div className="max-w-6xl mx-auto">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {}
         <div className="mb-8">
           <h1 className="text-3xl font-heading font-bold flex items-center">

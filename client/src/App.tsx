@@ -16,7 +16,6 @@ import BlackjackPage from "@/pages/blackjack-page";
 import PlinkoPage from "@/pages/plinko-page";
 import AdminPage from "@/pages/admin-page";
 import HistoryPage from "@/pages/history-page";
-import PurchasePage from "@/pages/purchase-page";
 import RewardsPage from "@/pages/rewards-page";
 import SubscriptionPage from "@/pages/subscription-page";
 import SupportPage from "@/pages/support-page";
@@ -37,7 +36,6 @@ function Router() {
       <ProtectedRoute path="/blackjack" component={BlackjackPage} />
       <ProtectedRoute path="/plinko" component={PlinkoPage} />
       <ProtectedRoute path="/history" component={HistoryPage} />
-      <ProtectedRoute path="/purchase" component={PurchasePage} />
       <ProtectedRoute path="/rewards" component={RewardsPage} />
       <ProtectedRoute path="/subscriptions" component={SubscriptionPage} />
       <ProtectedRoute path="/support" component={SupportPage} />

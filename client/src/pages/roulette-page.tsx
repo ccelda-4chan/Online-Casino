@@ -17,8 +17,8 @@ export default function RoulettePage() {
   
   return (
     <MainLayout>
-      <div ref={pageRef} className="container px-4 py-8 mx-auto max-w-6xl">
-        <h1 className="text-3xl font-bold mb-8">Roulette</h1>
+      <div ref={pageRef} className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        <h1 className="text-3xl font-bold">Roulette</h1>
         
         <RouletteStateProvider>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

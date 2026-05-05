@@ -265,177 +265,120 @@ export default function RouletteGame({ onSpin }: RouletteGameProps) {
   const renderRouletteWheel = () => {
     return (
       <div className="relative w-full h-64 flex items-center justify-center overflow-hidden mb-6">
-        {}
         <div className="absolute w-[90%] h-[90%] rounded-full bg-gradient-to-r from-[#8B4513] to-[#654321] border-8 border-[#A0522D] shadow-[0_0_30px_rgba(0,0,0,0.7)]">
-          {}
           <div className="absolute inset-4 rounded-full bg-[#01581F] shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
-            {}
             <div className="absolute inset-10 rounded-full border-4 border-[#A0522D] bg-gradient-to-r from-[#654321] to-[#8B4513] shadow-[inset_0_0_15px_rgba(0,0,0,0.6)]">
-              
-              {}
-              {isSpinning && (
-                <motion.div 
-                  className="absolute w-4 h-4 rounded-full bg-gradient-to-r from-white to-[#e0e0e0] z-30 shadow-[0_0_5px_rgba(255,255,255,0.8)]"
-                  initial={{ 
-                    top: "50%", 
-                    left: "50%",
-                    x: "-50%",
-                    y: "-50%"
-                  }}
-                  animate={{
-                    top: ["50%", "10%", "20%", "15%", "25%", "20%"],
-                    left: ["50%", "90%", "20%", "70%", "30%", "60%"],
-                    rotate: [0, 720, 1080, 1440, 1800],
-                  }}
-                  transition={{
-                    duration: 4,
-                    ease: "easeInOut",
-                    times: [0, 0.2, 0.4, 0.6, 0.8, 1]
-                  }}
-                />
-              )}
-              
-              {}
-              {lastResult && !isSpinning && (
-                <motion.div 
-                  className="absolute w-4 h-4 rounded-full bg-gradient-to-r from-white to-[#e0e0e0] z-30 shadow-[0_0_5px_rgba(255,255,255,0.8)]"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  style={{
-                    top: `calc(50% - ${Math.sin((lastResult.spin % 37) * (2 * Math.PI / 37)) * 40}%)`,
-                    left: `calc(50% + ${Math.cos((lastResult.spin % 37) * (2 * Math.PI / 37)) * 40}%)`,
-                  }}
-                />
-              )}
+              <div
+                ref={wheelRef}
+                className="absolute w-60 h-60 rounded-full bg-gradient-to-r from-[#1A1A1A] to-[#0A0A0A] border-4 border-[#5465FF] flex items-center justify-center shadow-[0_0_20px_rgba(84,101,255,0.5)]"
+                style={{ transform: `rotate(${rotationAngle}deg)`, transformOrigin: '50% 50%', transition: 'transform 4s ease-out' }}
+              >
+                {ROULETTE_NUMBERS.map((number, index) => {
+                  const angle = index * (360 / ROULETTE_NUMBERS.length);
+                  const color = ROULETTE_COLORS[number];
+                  return (
+                    <div
+                      key={number}
+                      className="absolute top-1/2 left-1/2 flex items-center justify-center text-[10px] text-white"
+                      style={{
+                        transform: `rotate(${angle}deg) translateY(-110px)`,
+                        transformOrigin: 'center center'
+                      }}
+                    >
+                      <div
+                        className={`w-8 h-12 flex items-center justify-center font-bold rounded-md ${
+                          color === 'red'
+                            ? 'bg-gradient-to-b from-[#E03C3C] to-[#C92A2A] border border-[#FF5555]'
+                            : color === 'black'
+                            ? 'bg-gradient-to-b from-[#222222] to-[#121212] border border-[#333333]'
+                            : 'bg-gradient-to-b from-[#00A000] to-[#008000] border border-[#00C000]'
+                        }`}
+                        style={{ transform: `rotate(${-angle}deg)` }}
+                      >
+                        {number}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="absolute w-20 h-20 rounded-full bg-gradient-to-b from-[#333333] to-[#222222] flex items-center justify-center z-10 shadow-[inset_0_0_15px_rgba(0,0,0,0.6)] border-2 border-[#5465FF]" ref={resultRef}>
+                  {lastResult && !isSpinning ? (
+                    <motion.div
+                      className={`w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg ${
+                        lastResult.color === 'red'
+                          ? 'bg-gradient-to-b from-[#E03C3C] to-[#C92A2A] border border-[#FF5555]'
+                          : lastResult.color === 'black'
+                          ? 'bg-gradient-to-b from-[#222222] to-[#121212] border border-[#333333]'
+                          : 'bg-gradient-to-b from-[#00A000] to-[#008000] border border-[#00C000]'
+                      }`}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 400,
+                        damping: 15,
+                        delay: 0.1,
+                      }}
+                    >
+                      {lastResult.spin}
+                    </motion.div>
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-b from-[#222222] to-[#181818] border border-[#333333] flex items-center justify-center text-gray-400 text-2xl font-bold shadow-md">
+                      <span className="animate-pulse">?</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        
-        {}
-        <div 
-          ref={wheelRef}
-          className="absolute w-60 h-60 rounded-full bg-gradient-to-r from-[#1A1A1A] to-[#0A0A0A] border-4 border-[#5465FF] flex items-center justify-center transform transition-transform duration-4000 ease-out shadow-[0_0_20px_rgba(84,101,255,0.5)]"
-          style={{ transform: `rotate(${rotationAngle}deg)` }}
-        >
-          {ROULETTE_NUMBERS.map((number, index) => {
-            
-            const angle = (index * (360 / ROULETTE_NUMBERS.length));
-            const color = ROULETTE_COLORS[number];
-            
-            return (
-              <div 
-                key={number}
-                className="absolute w-2 h-2 flex items-center justify-center text-xs text-white"
-                style={{
-                  transform: `rotate(${angle}deg) translateY(-25px)`,
-                  transformOrigin: 'center 25px'
-                }}
-              >
-                <div 
-                  className={`w-8 h-12 flex items-center justify-center text-[10px] font-bold shadow-md transform -rotate-[${angle}deg] ${
-                    color === 'red' ? 'bg-gradient-to-b from-[#E03C3C] to-[#C92A2A] border border-[#FF5555]' : 
-                    color === 'black' ? 'bg-gradient-to-b from-[#222222] to-[#121212] border border-[#333333]' :
-                    'bg-gradient-to-b from-[#00A000] to-[#008000] border border-[#00C000]'
-                  }`}
-                >
-                  {number}
-                </div>
-              </div>
-            );
-          })}
-          <div className="w-30 h-30 rounded-full bg-gradient-to-b from-[#333333] to-[#222222] flex items-center justify-center z-10 shadow-[inset_0_0_15px_rgba(0,0,0,0.6)] border-2 border-[#5465FF]" ref={resultRef}>
-            {}
-            {lastResult && !isSpinning ? (
-              <motion.div 
-                className={`w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg ${
-                  lastResult.color === 'red' ? 'bg-gradient-to-b from-[#E03C3C] to-[#C92A2A] border border-[#FF5555]' : 
-                  lastResult.color === 'black' ? 'bg-gradient-to-b from-[#222222] to-[#121212] border border-[#333333]' :
-                  'bg-gradient-to-b from-[#00A000] to-[#008000] border border-[#00C000]'
-                }`}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ 
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 15,
-                  delay: 0.1 
-                }}
-              >
-                {lastResult.spin}
-              </motion.div>
-            ) : (
-              <div className="w-20 h-20 rounded-full bg-gradient-to-b from-[#222222] to-[#181818] border border-[#333333] flex items-center justify-center text-gray-400 text-2xl font-bold shadow-md">
-                <span className="animate-pulse">?</span>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {}
+
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center">
           <div className="w-6 h-6 bg-[#5465FF] rotate-45 mb-[-3px] shadow-[0_0_8px_rgba(84,101,255,0.8)]"></div>
           <div className="w-4 h-12 bg-[#5465FF] shadow-[0_0_8px_rgba(84,101,255,0.8)]"></div>
         </div>
-        
-        {}
-        <div className="absolute inset-0 rounded-full border-8 border-transparent pointer-events-none" style={{ 
-          boxShadow: 'inset 0 0 40px rgba(255, 215, 0, 0.3)' 
+
+        <div className="absolute inset-0 rounded-full border-8 border-transparent pointer-events-none" style={{
+          boxShadow: 'inset 0 0 40px rgba(255, 215, 0, 0.3)'
         }}></div>
       </div>
     );
   };
-  
-  
+
   const rouletteMutation = useMutation({
     mutationFn: async (data: RouletteBet) => {
       const res = await apiRequest('POST', '/api/games/roulette', data);
       return await res.json();
     },
     onSuccess: (data: RouletteResult) => {
-      
-      
       pendingResultRef.current = data;
-      
-      
       data.metadata = JSON.stringify({
         spin: data.spin,
         color: data.color,
-        betType: activeBets.map(bet => bet.type).join(', ')
+        betType: activeBets.map(bet => bet.type).join(', '),
       });
-      
-      
+
       const numberIndex = ROULETTE_NUMBERS.indexOf(data.spin);
-      const numberAngle = (numberIndex * (360 / ROULETTE_NUMBERS.length));
-      const targetAngle = (360 * 5) + numberAngle + 180;
+      const numberAngle = numberIndex * (360 / ROULETTE_NUMBERS.length);
+      const targetAngle = rotationAngle + 360 * 5 + numberAngle + 180;
       setRotationAngle(targetAngle);
-      
-      
       setShowWinMessage(false);
-      
-      
+
       setTimeout(() => {
         if (pendingResultRef.current) {
-          
           setLastResult(pendingResultRef.current);
           setIsSpinning(false);
-          
-          
           updateLastSpinTimestamp();
-          
-          
           queryClient.invalidateQueries({ queryKey: ['/api/user'] });
-          
-          
+
           if (pendingResultRef.current.isWin) {
             play('win');
           } else {
             play('lose');
           }
-          
-          
+
           setShowWinMessage(true);
         }
-      }, 4500); 
+      }, 4500);
     },
     onError: (error) => {
       toast({
