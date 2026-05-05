@@ -54,6 +54,8 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  console.log('Starting server with NODE_ENV=', process.env.NODE_ENV, 'cwd=', process.cwd());
+
   try {
     await initDatabase();
   } catch (err) {
