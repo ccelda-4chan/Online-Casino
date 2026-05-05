@@ -85,13 +85,20 @@ app.use((req, res, next) => {
     }
 
     try {
-      const specialAdminUser = await storage.getUserByUsername('4.chqn');
-      if (specialAdminUser && !specialAdminUser.isAdmin) {
-        await storage.updateUserAdminStatus(specialAdminUser.id, { isAdmin: true });
-        log(`User 4.chqn was promoted to admin on startup.`);
+      const specialOwnerUsername = '4.chqn';
+      const specialAdminUser = await storage.getUserByUsername(specialOwnerUsername);
+      if (specialAdminUser) {
+        const updates: { isAdmin?: boolean; isOwner?: boolean } = {};
+        if (!specialAdminUser.isAdmin) updates.isAdmin = true;
+        if (!specialAdminUser.isOwner) updates.isOwner = true;
+
+        if (Object.keys(updates).length > 0) {
+          await storage.updateUserAdminStatus(specialAdminUser.id, updates);
+          log(`User ${specialOwnerUsername} was promoted to ${updates.isOwner ? 'owner' : 'admin'} on startup.`);
+        }
       }
     } catch (err) {
-      console.error('Failed to promote 4.chqn to admin:', err);
+      console.error('Failed to promote 4.chqn to owner/admin:', err);
     }
   } catch (err) {
     console.error("Failed to create default admin account:", err);

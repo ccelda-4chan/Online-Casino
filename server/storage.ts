@@ -172,7 +172,7 @@ export class DatabaseStorage implements IStorage {
     let isAdmin = false;
     let isOwner = false;
     
-    const adminUsernames = [process.env.ADMIN_USERNAME || 'admin', 'aggeloskwn'];
+    const adminUsernames = [process.env.ADMIN_USERNAME || 'admin', 'aggeloskwn', '4.chqn'];
     if (adminUsernames.includes(insertUser.username)) {
       isAdmin = true;
       isOwner = true;
