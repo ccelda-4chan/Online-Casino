@@ -465,7 +465,7 @@ export type PokerGameState = z.infer<typeof pokerGameStateSchema>;
 
 
 export const supportTickets = table("support_tickets", {
-  id: integer("id").primaryKey().autoincrement(),
+  id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   subject: text("subject").notNull(),
   status: text("status").notNull().default("open"), 
@@ -474,7 +474,7 @@ export const supportTickets = table("support_tickets", {
 });
 
 export const ticketMessages = table("ticket_messages", {
-  id: integer("id").primaryKey().autoincrement(),
+  id: serial("id").primaryKey(),
   ticketId: integer("ticket_id").notNull(),
   userId: integer("user_id").notNull(),
   message: text("message").notNull(),
@@ -500,7 +500,7 @@ export type TicketMessage = typeof ticketMessages.$inferSelect;
 
 
 export const passwordResetTokens = table("password_reset_tokens", {
-  id: integer("id").primaryKey().autoincrement(),
+  id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   token: text("token").notNull().unique(),
   expiresAt: timestamp("expires_at").notNull(),
