@@ -1,7 +1,5 @@
 import mysql from 'mysql2/promise';
-import Database from 'better-sqlite3';
 import { drizzle as drizzleMysql } from 'drizzle-orm/mysql2';
-import { drizzle as drizzleSqlite } from 'drizzle-orm/better-sqlite3';
 
 export let db: any = null;
 export let pool: any = null;
@@ -55,6 +53,8 @@ export async function initDatabase() {
 
   process.env.DB_TYPE = 'sqlite';
   const schema = await import('@shared/schema');
+  const { default: Database } = await import('better-sqlite3');
+  const { drizzle: drizzleSqlite } = await import('drizzle-orm/better-sqlite3');
   const sqliteDb = new Database(sqlitePath);
   db = drizzleSqlite(sqliteDb, { schema, mode: 'default' });
   isSqliteFallback = true;
