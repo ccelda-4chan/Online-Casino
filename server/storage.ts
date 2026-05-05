@@ -1093,7 +1093,7 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Failed to create support ticket");
     }
 
-    const [message] = await db
+    const [createdMessage] = await db
       .insert(ticketMessages)
       .values({
         ticketId: ticket.id,
@@ -1104,7 +1104,7 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
 
-    if (!message) {
+    if (!createdMessage) {
       throw new Error("Failed to create support ticket message");
     }
 
