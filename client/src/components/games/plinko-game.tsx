@@ -28,7 +28,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   PlinkoResult, 
   RiskLevel, 
-  BallPosition, 
   Bucket, 
   PathStep, 
   PinPosition 
@@ -180,6 +179,14 @@ const calculateBucketsWithSpacing = (
 };
 
 
+interface BallState {
+  id: number;
+  path: PathStep[];
+  x: number;
+  y: number;
+  finished: boolean;
+}
+
 interface PlinkoGameProps {
   onResultChange?: (result: PlinkoResult | null) => void;
   onAnimatingChange?: (isAnimating: boolean) => void;
@@ -204,12 +211,13 @@ export default function PlinkoGame({
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
   const [currentPath, setCurrentPath] = useState<PathStep[] | null>(null);
   const [result, setResult] = useState<PlinkoResult | null>(null);
+  const [ballStates, setBallStates] = useState<BallState[]>([]);
   
   const [risk, setRisk] = useState<RiskLevel>(externalRisk || 'medium');
   const [pins, setPins] = useState<PinPosition[]>([]);
   const [buckets, setBuckets] = useState<Bucket[]>([]);
-  const [ballPosition, setBallPosition] = useState<BallPosition>({ x: 0, y: 0 });
   const [landingBucket, setLandingBucket] = useState<number | null>(null);
+  const animationRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
   
   
   const [dimensions, setDimensions] = useState({
@@ -222,9 +230,7 @@ export default function PlinkoGame({
   
   const [ballSize, setBallSize] = useState(14);
   
-  const animationRef = useRef<NodeJS.Timeout | null>(null);
 
-  
   useEffect(() => {
     
     const updateDimensions = () => {
@@ -256,12 +262,6 @@ export default function PlinkoGame({
         newDimensions.pinSpacingX, 
         newDimensions.boardWidth
       ));
-      
-      
-      setBallPosition({ 
-        x: newDimensions.boardWidth / 2, 
-        y: 0 
-      });
     };
     
     
@@ -318,9 +318,9 @@ export default function PlinkoGame({
   useEffect(() => {
     if (externalResult && !isAnimating) {
       setResult(externalResult);
-      
       setRisk(externalResult.risk);
-      animateBall(externalResult.path);
+      const paths = externalResult.paths ?? [externalResult.path];
+      animateBallPaths(paths);
       
       console.log('Received game result from server:', externalResult);
       if (externalResult.multipliers) {
@@ -366,152 +366,81 @@ export default function PlinkoGame({
   }, [risk, onRiskChange]);
   
   
-  const animateBall = (path: PathStep[]): void => {
+  const resetBallAnimations = () => {
+    animationRefs.current.forEach(clearTimeout);
+    animationRefs.current = [];
+  };
+
+  const updateBallState = (id: number, updated: Partial<BallState>) => {
+    setBallStates(prev => prev.map(ball => ball.id === id ? { ...ball, ...updated } : ball));
+  };
+
+  const animateBallPaths = (paths: PathStep[][]): void => {
+    resetBallAnimations();
     setIsAnimating(true);
-    
-    
-    setBallPosition({ x: dimensions.boardWidth / 2, y: 0 });
-    
-    
-    const fullPath = path || generateRandomPath();
-    setCurrentPath(fullPath);
-    
-    let currentStep = 0;
-    const totalSteps = fullPath.length;
-    
-    
-    
-    const getStepDuration = (step: number, total: number): number => {
-      
-      if (step < total * 0.2) {
-        return 700 - (step * 15); 
-      } 
-      
-      else if (step < total * 0.8) {
-        return 450;
-      } 
-      
-      else {
-        const remainingSteps = total - step;
-        return 450 + ((total * 0.2 - remainingSteps) * 30); 
-      }
-    };
-    
-    const animate = (): void => {
-      if (currentStep >= totalSteps) {
-        
-        setIsAnimating(false);
-        
-        
-        const finalPosition = fullPath[fullPath.length - 1].position;
-        
-        
-        const safeBucketIndex = Math.min(Math.max(0, finalPosition), BUCKET_COUNT - 1);
-        setLandingBucket(safeBucketIndex);
-        
-        
-        const bucketWidth = dimensions.pinSpacingX;
-        const totalBucketsWidth = bucketWidth * BUCKET_COUNT;
-        const centerX = dimensions.boardWidth / 2;
-        const startX = centerX - (totalBucketsWidth / 2);
-        const finalX = startX + safeBucketIndex * bucketWidth + bucketWidth / 2;
-        
-        
-        
-        const bucketPosition = dimensions.boardHeight - 30;
-        
-        
-        
-        setBallPosition({ 
-          x: finalX,
-          y: bucketPosition - 20 
-        });
-        
-        
-        setTimeout(() => {
-          
-          setBallPosition({ 
-            x: finalX,
-            y: bucketPosition + 5 
-          });
-          
-          setTimeout(() => {
-            
-            setBallPosition({ 
-              x: finalX,
-              y: bucketPosition - 6
-            });
-            
-            setTimeout(() => {
-              
-              setBallPosition({ 
-                x: finalX,
-                y: bucketPosition + 3
-              });
-              
-              setTimeout(() => {
-                
-                setBallPosition({ 
-                  x: finalX,
-                  y: bucketPosition - 1
-                });
-                
-                setTimeout(() => {
-                  
-                  setBallPosition({ 
-                    x: finalX,
-                    y: bucketPosition 
-                  });
-                }, 120);
-              }, 120);
-            }, 120);
-          }, 150);
-        }, 180);
-        
-        
-        if (result && result.isWin) {
-          play('win');
-        } else {
-          play('lose');
+    setLandingBucket(paths.length === 1 ? paths[0][paths[0].length - 1].position : null);
+    setCurrentPath(paths[0]);
+
+    const startDelayStep = 120;
+    let completedCount = 0;
+
+    const animateSingleBall = (ballIndex: number, path: PathStep[]) => {
+      const offsetX = (ballIndex - (paths.length - 1) / 2) * 8;
+      const totalSteps = path.length;
+      let currentStep = 0;
+
+      const step = () => {
+        if (currentStep >= totalSteps) {
+          updateBallState(ballIndex, { finished: true });
+          completedCount += 1;
+          if (completedCount === paths.length) {
+            setIsAnimating(false);
+            if (result?.isWin) {
+              play('win');
+            } else {
+              play('lose');
+            }
+          }
+          return;
         }
-        
-        
-        
-        return;
-      }
-      
-      
-      const pathStep = fullPath[currentStep];
-      let newX = 0;
-      let newY = 0;
 
-      if (pathStep.row < ROWS - 1) {
-        const coords = getPinCoordinates(pathStep.row, pathStep.position, dimensions);
-        newX = coords.x;
-        newY = coords.y;
-      } else {
-        const safePosition = Math.min(Math.max(0, pathStep.position), BUCKET_COUNT - 1);
-        newX = getBucketCenterX(safePosition, dimensions);
-        newY = dimensions.boardHeight - 30;
-      }
+        const pathStep = path[currentStep];
+        let newX = 0;
+        let newY = 0;
 
-      setBallPosition({ x: newX, y: newY });
-      
-      
-      if (currentStep > 0 && currentStep < totalSteps - 1) {
-        play('click');
-      }
-      
-      
-      currentStep++;
-      
-      
-      const nextDuration = 120 + Math.floor((currentStep / totalSteps) * 50);
-      animationRef.current = setTimeout(animate, nextDuration);
+        if (pathStep.row < ROWS - 1) {
+          const coords = getPinCoordinates(pathStep.row, pathStep.position, dimensions);
+          newX = coords.x + offsetX;
+          newY = coords.y;
+        } else {
+          const safePosition = Math.min(Math.max(0, pathStep.position), BUCKET_COUNT - 1);
+          newX = getBucketCenterX(safePosition, dimensions) + offsetX;
+          newY = dimensions.boardHeight - 30;
+        }
+
+        updateBallState(ballIndex, { x: newX, y: newY });
+
+        if (currentStep > 0 && currentStep < totalSteps - 1) {
+          play('click');
+        }
+
+        currentStep += 1;
+        const nextDuration = 120 + Math.floor((currentStep / totalSteps) * 50);
+        animationRefs.current.push(setTimeout(step, nextDuration));
+      };
+
+      animationRefs.current.push(setTimeout(step, ballIndex * startDelayStep));
     };
 
-    const initialDuration = 120;
-    animationRef.current = setTimeout(animate, initialDuration);
+    setBallStates(paths.map((path, index) => ({
+      id: index,
+      path,
+      x: dimensions.boardWidth / 2 + (index - (paths.length - 1) / 2) * 8,
+      y: 0,
+      finished: false
+    })));
+
+    paths.forEach((path, index) => animateSingleBall(index, path));
   };
 
   const generateRandomPath = (): PathStep[] => {
@@ -535,16 +464,15 @@ export default function PlinkoGame({
   
   useEffect(() => {
     return () => {
-      if (animationRef.current) {
-        clearTimeout(animationRef.current);
-      }
+      resetBallAnimations();
     };
   }, []);
   
   
   const handlePlayAgain = (): void => {
     if (result && !isAnimating) {
-      animateBall(result.path);
+      const paths = result.paths ?? [result.path];
+      animateBallPaths(paths);
     }
   };
   
@@ -647,8 +575,9 @@ export default function PlinkoGame({
               
               {}
               <AnimatePresence>
-                {isAnimating && (
+                {ballStates.map((ball) => (
                   <motion.div
+                    key={`plinko-ball-${ball.id}`}
                     className="absolute rounded-full z-10 overflow-hidden"
                     style={{
                       width: ballSize,
@@ -662,10 +591,9 @@ export default function PlinkoGame({
                       rotate: 0
                     }}
                     animate={{ 
-                      x: ballPosition.x - ballSize / 2,
-                      y: ballPosition.y - ballSize / 2,
-                      
-                      rotate: ballPosition.x * 0.5
+                      x: ball.x - ballSize / 2,
+                      y: ball.y - ballSize / 2,
+                      rotate: ball.x * 0.5
                     }}
                     transition={{ 
                       type: 'spring', 
@@ -674,7 +602,6 @@ export default function PlinkoGame({
                       mass: 1.2
                     }}
                   >
-                    {}
                     <div 
                       className="absolute"
                       style={{
@@ -687,7 +614,7 @@ export default function PlinkoGame({
                       }}
                     />
                   </motion.div>
-                )}
+                ))}
               </AnimatePresence>
             </div>
           </div>

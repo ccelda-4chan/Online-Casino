@@ -305,10 +305,12 @@ export const plinkoGameSchema = z.object({
   rows: z.number().int().min(8).max(16),
   pins: z.array(z.array(plinkoPinSchema)).optional(),
   path: z.array(plinkoPathSchema),
+  paths: z.array(z.array(plinkoPathSchema)).optional(),
   multiplier: z.number(),
   payout: z.number(),
   isWin: z.boolean(),
   landingPosition: z.number().int().min(0),
+  landingPositions: z.array(z.number().int().min(0)).optional(),
   multipliers: z.array(z.number()).optional(),
 });
 

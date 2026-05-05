@@ -39,13 +39,36 @@ export default function RouletteGame({ onSpin }: RouletteGameProps) {
   const [lastResult, setLastResult] = useState<RouletteResult | null>(null);
   const [activeBets, setActiveBets] = useState<Bet[]>([]);
   const [rotationAngle, setRotationAngle] = useState(0);
+  const [ballAngle, setBallAngle] = useState(0);
   const [showWinMessage, setShowWinMessage] = useState(false);
   const pendingResultRef = useRef<RouletteResult | null>(null);
+  const ballIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   
   const totalBetAmount = activeBets.reduce((total, bet) => total + bet.amount, 0);
   
+  useEffect(() => {
+    if (isSpinning) {
+      if (ballIntervalRef.current) {
+        clearInterval(ballIntervalRef.current);
+      }
+      ballIntervalRef.current = setInterval(() => {
+        setBallAngle((value) => (value + 14) % 360);
+      }, 40);
+    } else if (ballIntervalRef.current) {
+      clearInterval(ballIntervalRef.current);
+      ballIntervalRef.current = null;
+    }
+
+    return () => {
+      if (ballIntervalRef.current) {
+        clearInterval(ballIntervalRef.current);
+        ballIntervalRef.current = null;
+      }
+    };
+  }, [isSpinning]);
   
+
   const handleOutsideBetClick = (betType: RouletteBetType, numbers: number[]) => {
     if (isSpinning) return;
     
@@ -330,6 +353,21 @@ export default function RouletteGame({ onSpin }: RouletteGameProps) {
               </div>
             </div>
           </div>
+
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+            <div
+              className="absolute rounded-full bg-white shadow-lg"
+              style={{
+                width: 14,
+                height: 14,
+                transform: `translate(-50%, -50%) rotate(${ballAngle}deg) translateX(120px)`,
+                top: '50%',
+                left: '50%',
+                background: 'radial-gradient(circle at 30% 30%, #ffffff, #ffd700 60%, #e6b800)',
+                boxShadow: '0 0 12px rgba(255, 215, 0, 0.8)'
+              }}
+            />
+          </div>
         </div>
 
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center">
@@ -359,7 +397,7 @@ export default function RouletteGame({ onSpin }: RouletteGameProps) {
 
       const numberIndex = ROULETTE_NUMBERS.indexOf(data.spin);
       const numberAngle = numberIndex * (360 / ROULETTE_NUMBERS.length);
-      const targetAngle = rotationAngle + 360 * 5 + numberAngle + 180;
+      const targetAngle = rotationAngle + 360 * 5 - numberAngle;
       setRotationAngle(targetAngle);
       setShowWinMessage(false);
 

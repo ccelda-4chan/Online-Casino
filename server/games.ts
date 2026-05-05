@@ -1456,11 +1456,12 @@ export async function playPlinko(req: Request, res: Response) {
     
     const parsedBody = z.object({
       amount: z.number().positive().min(1).max(10000),
+      balls: z.number().int().min(1).max(5).default(1),
       risk: z.enum(['low', 'medium', 'high']).default('medium')
     }).parse(req.body);
     
-    const { amount, risk } = parsedBody;
-    
+    const { amount, balls, risk } = parsedBody;
+    const totalBet = amount * balls;
     
     const user = await storage.getUser(userId);
     if (!user) {
@@ -1468,7 +1469,7 @@ export async function playPlinko(req: Request, res: Response) {
     }
     
     
-    if (Number(user.balance) < amount) {
+    if (Number(user.balance) < totalBet) {
       return res.status(400).json({ message: "Insufficient balance" });
     }
     
@@ -1513,8 +1514,6 @@ export async function playPlinko(req: Request, res: Response) {
     
     
     
-    const path = [];
-    let currentPosition = 0;
     
     
     
@@ -1522,174 +1521,159 @@ export async function playPlinko(req: Request, res: Response) {
     
     const RISK_PROBABILITIES = {
       low: {
-        lossChance: 40,      
-        smallWinChance: 50,  
-        mediumWinChance: 9,  
-        bigWinChance: 1      
+        lossChance: 40,
+        smallWinChance: 50,
+        mediumWinChance: 9,
+        bigWinChance: 1
       },
       medium: {
-        lossChance: 65,      
-        smallWinChance: 20,  
-        mediumWinChance: 10, 
-        bigWinChance: 5      
+        lossChance: 65,
+        smallWinChance: 20,
+        mediumWinChance: 10,
+        bigWinChance: 5
       },
       high: {
-        lossChance: 80,      
-        smallWinChance: 5,   
-        mediumWinChance: 5,  
-        bigWinChance: 10     
+        lossChance: 80,
+        smallWinChance: 5,
+        mediumWinChance: 5,
+        bigWinChance: 10
       }
     };
-    
-    
+
     const riskProbs = RISK_PROBABILITIES[risk];
-    
-    
-    
-    let targetIndex = Math.floor(Math.random() * multipliers.length);
-    
-    
-    const randomValue = Math.random() * 100;
-    
-    
     const vipBoostFactor = await getVipWinMultiplier(userId);
-    const vipBoost = (vipBoostFactor - 1) * 3; 
-    
-    
+    const vipBoost = (vipBoostFactor - 1) * 3;
     const adjustedProbs = {
       lossChance: Math.max(riskProbs.lossChance - vipBoost, 0),
       smallWinChance: riskProbs.smallWinChance + (vipBoost / 3),
       mediumWinChance: riskProbs.mediumWinChance + (vipBoost / 3),
       bigWinChance: riskProbs.bigWinChance + (vipBoost / 3)
     };
-    
+
     console.log(`Plinko game - Risk: ${risk}, Play count: ${playCount}, Risk probabilities:`, adjustedProbs);
-    
-    if (randomValue < adjustedProbs.lossChance) {
-      
-      
-      const middleIndex = Math.floor(multipliers.length / 2);
-      const variance = Math.floor(multipliers.length / 5);
-      targetIndex = middleIndex + Math.floor(Math.random() * variance * 2) - variance;
-    } 
-    else if (randomValue < (adjustedProbs.lossChance + adjustedProbs.smallWinChance)) {
-      
-      const smallWinPositions = multipliers
-        .map((m, i) => ({ mult: m, index: i }))
-        .filter(item => item.mult > 0.9 && item.mult <= 2.5)
-        .map(item => item.index);
-      
-      if (smallWinPositions.length > 0) {
-        const randomSmallWinIndex = Math.floor(Math.random() * smallWinPositions.length);
-        targetIndex = smallWinPositions[randomSmallWinIndex];
-      }
-    }
-    else if (randomValue < (adjustedProbs.lossChance + adjustedProbs.smallWinChance + adjustedProbs.mediumWinChance)) {
-      
-      const mediumWinPositions = multipliers
-        .map((m, i) => ({ mult: m, index: i }))
-        .filter(item => item.mult > 2.5 && item.mult <= 5.0)
-        .map(item => item.index);
-      
-      if (mediumWinPositions.length > 0) {
-        const randomMediumWinIndex = Math.floor(Math.random() * mediumWinPositions.length);
-        targetIndex = mediumWinPositions[randomMediumWinIndex];
-      }
-    }
-    else {
-      
-      
-      const winChanceBoost = Math.min(plinkoWinChance / 10, 10); 
-      
-      if (Math.random() * 100 < (adjustedProbs.bigWinChance + winChanceBoost)) {
-        
-        const bigWinPositions = multipliers
+
+    const chooseTargetIndex = (): number => {
+      let targetIndex = Math.floor(Math.random() * multipliers.length);
+      const randomValue = Math.random() * 100;
+
+      if (randomValue < adjustedProbs.lossChance) {
+        const middleIndex = Math.floor(multipliers.length / 2);
+        const variance = Math.floor(multipliers.length / 5);
+        targetIndex = middleIndex + Math.floor(Math.random() * variance * 2) - variance;
+      } else if (randomValue < (adjustedProbs.lossChance + adjustedProbs.smallWinChance)) {
+        const smallWinPositions = multipliers
           .map((m, i) => ({ mult: m, index: i }))
-          .filter(item => item.mult > 5.0)
+          .filter(item => item.mult > 0.9 && item.mult <= 2.5)
           .map(item => item.index);
-        
-        if (bigWinPositions.length > 0) {
-          const randomBigWinIndex = Math.floor(Math.random() * bigWinPositions.length);
-          targetIndex = bigWinPositions[randomBigWinIndex];
+        if (smallWinPositions.length > 0) {
+          const randomSmallWinIndex = Math.floor(Math.random() * smallWinPositions.length);
+          targetIndex = smallWinPositions[randomSmallWinIndex];
+        }
+      } else if (randomValue < (adjustedProbs.lossChance + adjustedProbs.smallWinChance + adjustedProbs.mediumWinChance)) {
+        const mediumWinPositions = multipliers
+          .map((m, i) => ({ mult: m, index: i }))
+          .filter(item => item.mult > 2.5 && item.mult <= 5.0)
+          .map(item => item.index);
+        if (mediumWinPositions.length > 0) {
+          const randomMediumWinIndex = Math.floor(Math.random() * mediumWinPositions.length);
+          targetIndex = mediumWinPositions[randomMediumWinIndex];
+        }
+      } else {
+        const winChanceBoost = Math.min(plinkoWinChance / 10, 10);
+        if (Math.random() * 100 < (adjustedProbs.bigWinChance + winChanceBoost)) {
+          const bigWinPositions = multipliers
+            .map((m, i) => ({ mult: m, index: i }))
+            .filter(item => item.mult > 5.0)
+            .map(item => item.index);
+          if (bigWinPositions.length > 0) {
+            const randomBigWinIndex = Math.floor(Math.random() * bigWinPositions.length);
+            targetIndex = randomBigWinIndex;
+          }
         }
       }
-    }
-    
-    
-    if (isBigWin) {
-      targetIndex = Math.max(targetIndex, Math.floor(multipliers.length * 0.8));
-    }
-    
-    
-    const targetPosition = targetIndex;
-    
-    
-    const pinRows = rows - 1;
-    for (let r = 0; r < pinRows; r++) {
-      path.push({ row: r, position: currentPosition });
-      const maxPosition = r + 1;
-      const remainingSteps = pinRows - r;
-      const requiredMoves = Math.max(0, targetPosition - currentPosition);
-      const moveProbability = remainingSteps > 0 ? Math.min(Math.max(requiredMoves / remainingSteps, 0.15), 0.85) : 0;
-      if (Math.random() < moveProbability && currentPosition < maxPosition) {
-        currentPosition += 1;
+
+      if (isBigWin) {
+        targetIndex = Math.max(targetIndex, Math.floor(multipliers.length * 0.8));
       }
+
+      return Math.min(Math.max(targetIndex, 0), multipliers.length - 1);
+    };
+
+    const buildPath = (targetPosition: number) => {
+      const path: any[] = [];
+      let currentPosition = 0;
+      const pinRows = rows - 1;
+
+      for (let r = 0; r < pinRows; r++) {
+        path.push({ row: r, position: currentPosition });
+        const maxPosition = r + 1;
+        const remainingSteps = pinRows - r;
+        const requiredMoves = Math.max(0, targetPosition - currentPosition);
+        const moveProbability = remainingSteps > 0 ? Math.min(Math.max(requiredMoves / remainingSteps, 0.15), 0.85) : 0;
+        if (Math.random() < moveProbability && currentPosition < maxPosition) {
+          currentPosition += 1;
+        }
+      }
+
+      path.push({ row: rows - 1, position: currentPosition });
+      path.push({ row: rows, position: currentPosition });
+      return { path, landingPosition: currentPosition };
+    };
+
+    const vipMultiplier = vipBoostFactor;
+    const ballResults = Array.from({ length: balls }, () => {
+      const targetPosition = chooseTargetIndex();
+      const { path, landingPosition } = buildPath(targetPosition);
+      const adjustedPosition = Math.min(landingPosition, multipliers.length - 1);
+      const multiplier = multipliers[adjustedPosition];
+      const isWin = multiplier > 1.0;
+      const payout = amount * multiplier * (isWin ? vipMultiplier : 1.0);
+      return {
+        path,
+        landingPosition: adjustedPosition,
+        multiplier,
+        payout,
+        isWin
+      };
+    });
+
+    const totalPayout = ballResults.reduce((sum, resultItem) => sum + resultItem.payout, 0);
+    const overallIsWin = ballResults.some(resultItem => resultItem.isWin);
+    const overallMultiplier = totalPayout / totalBet;
+    const newBalance = Number(user.balance) - totalBet + totalPayout;
+
+    if (overallIsWin && vipMultiplier > 1.0) {
+      console.log(`Applied VIP multiplier (${vipMultiplier}x) to user ${userId}'s plinko wins. Total payout: ${totalPayout}`);
     }
 
-    path.push({ row: rows - 1, position: currentPosition });
-    path.push({ row: rows, position: currentPosition });
-    
-    
-    const landingPosition = path[path.length - 1].position;
-    
-    const adjustedPosition = Math.min(landingPosition, multipliers.length - 1);
-    const multiplier = multipliers[adjustedPosition];
-    
-    
-    const isWin = multiplier > 1.0;
-    
-    
-    const vipMultiplier = await getVipWinMultiplier(userId);
-    
-    
-    const payout = amount * multiplier * (isWin ? vipMultiplier : 1.0);
-    
-    
-    const newBalance = Number(user.balance) - amount + payout;
-    
-    
-    if (isWin && vipMultiplier > 1.0) {
-      console.log(`Applied VIP multiplier (${vipMultiplier}x) to user ${userId}'s plinko win. Base payout: ${amount * multiplier}, Final payout: ${payout}`);
-    }
     await storage.updateUserBalance(userId, newBalance);
-    
-    
+
     await storage.createTransaction({
       userId,
       gameType: "plinko",
-      amount: amount.toString(),
-      multiplier: multiplier.toString(),
-      payout: payout.toString(),
-      isWin
+      amount: totalBet.toString(),
+      multiplier: overallMultiplier.toString(),
+      payout: totalPayout.toString(),
+      isWin: overallIsWin
     });
-    
-    
+
     await storage.incrementPlayCount(userId);
-    
-    
-    
+
     const result = plinkoGameSchema.parse({
       risk,
       rows,
       pins,
-      path,
-      multiplier,
-      payout,
-      isWin,
-      landingPosition: adjustedPosition,
-      multipliers: multipliers 
+      path: ballResults[0].path,
+      paths: ballResults.map(item => item.path),
+      multiplier: totalPayout / totalBet,
+      payout: totalPayout,
+      isWin: overallIsWin,
+      landingPosition: ballResults[0].landingPosition,
+      landingPositions: ballResults.map(item => item.landingPosition),
+      multipliers: multipliers,
+      amount: totalBet
     });
-    
+
     res.status(200).json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {

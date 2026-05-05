@@ -34,11 +34,15 @@ export interface PlinkoResult {
   risk: RiskLevel;
   rows: number;
   landingPosition: number;
-  amount?: number; 
-  multipliers?: number[]; 
+  paths?: PathStep[][];
+  landingPositions?: number[];
+  balls?: number;
+  amount?: number;
+  multipliers?: number[];
 }
 
 export interface BetData {
   amount: number;
   risk: RiskLevel;
+  balls?: number;
 }

